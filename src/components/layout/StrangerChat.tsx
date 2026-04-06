@@ -203,41 +203,43 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 blur-[120px] pointer-events-none" />
 
       {/* ── Header Area (Persistent & Sticky) ── */}
-      <div className="shrink-0 z-20">
-        <header className={`flex items-center justify-between gap-3 px-4 md:px-6 pb-2 bg-base-300/90 backdrop-blur-xl border-b border-base-300 ${standalone ? "pt-10 md:pt-4" : "pt-3 md:pt-4"}`}>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-[#1D4ED8] text-white shadow-lg shadow-[#1D4ED8]/20">
-              <Dices size={20} />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-base font-bold text-base-content tracking-tight leading-tight">Anonymous Chat</h1>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${DOT_CLASS[chat.status]}`} />
-                <span className="text-[9px] text-base-content/50 uppercase tracking-widest font-black">
-                  {STATUS_LABEL[chat.status]}
-                </span>
+      {!standalone && (
+        <div className="shrink-0 z-20">
+          <header className="flex items-center justify-between gap-3 px-4 md:px-6 pb-2 bg-base-300/90 backdrop-blur-xl border-b border-base-300 pt-3 md:pt-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-[#1D4ED8] text-white shadow-lg shadow-[#1D4ED8]/20">
+                <Dices size={20} />
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-base font-bold text-base-content tracking-tight leading-tight">Anonymous Chat</h1>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${DOT_CLASS[chat.status]}`} />
+                  <span className="text-[9px] text-base-content/50 uppercase tracking-widest font-black">
+                    {STATUS_LABEL[chat.status]}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {onClose && (
-              <button onClick={onClose} className="btn btn-ghost btn-sm btn-square opacity-60 hover:opacity-100">
-                <X size={20} />
-              </button>
-            )}
-          </div>
-        </header>
-
-        {/* ── Persistent Info Banner ── */}
-        {(chat.status === "CONNECTED" || chat.status === "PARTNER_LEFT") && (
-          <div className="px-6 py-2.5 bg-base-200/50 backdrop-blur-md border-b border-base-content/5 flex items-center justify-center">
-            <div className="flex items-center gap-2 text-base-content/40 font-bold uppercase tracking-[0.2em] text-[9px]">
-              <IconShield />
-              <span>Chatting anonymously with local people</span>
+            <div className="flex items-center gap-2">
+              {onClose && (
+                <button onClick={onClose} className="btn btn-ghost btn-sm btn-square opacity-60 hover:opacity-100">
+                  <X size={20} />
+                </button>
+              )}
             </div>
-          </div>
-        )}
-      </div>
+          </header>
+
+          {/* ── Persistent Info Banner ── */}
+          {(chat.status === "CONNECTED" || chat.status === "PARTNER_LEFT") && (
+            <div className="px-6 py-2.5 bg-base-200/50 backdrop-blur-md border-b border-base-content/5 flex items-center justify-center">
+              <div className="flex items-center gap-2 text-base-content/40 font-bold uppercase tracking-[0.2em] text-[9px]">
+                <IconShield />
+                <span>Chatting anonymously with local people</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Body ── */}
       <main className="flex-1 flex flex-col min-h-0 relative z-10">
@@ -272,7 +274,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       </main>
 
       {/* ── Footer ── */}
-      <footer className="shrink-0 p-4 pb-6 md:pb-6 relative z-30">
+      <footer className="shrink-0 p-2 md:p-4 pb-4 md:pb-6 relative z-30">
         {(chat.status === "CONNECTED" || chat.status === "PARTNER_LEFT") && (
           <div className="max-w-[1000px] mx-auto">
             <AnimatePresence>
@@ -360,24 +362,27 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                   </div>
                   
                   {/* Primary Action Button (Send) */}
-                  <button onClick={handleSend} disabled={!draft.trim()} className="btn bg-[#00a884] hover:bg-[#128C7E] disabled:bg-[#00a884]/50 disabled:text-white/50 text-white btn-circle shrink-0 h-[48px] w-[48px] shadow-lg shadow-[#00a884]/20 border-none transition-all duration-200 flex items-center justify-center">
-                    <Send size={20} className="ml-1" />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between px-1 md:px-2 mt-2 md:mt-4">
-                  <div className="flex items-center gap-2 md:gap-4 flex-wrap">
-                    <button onClick={handleNext} className="flex items-center gap-1.5 md:gap-2 text-base-content/40 hover:text-[#1D4ED8] transition-colors text-[9px] md:text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] leading-none group">
-                      <Zap size={13} className="group-hover:fill-current" /> Next
-                    </button>
-                    <button onClick={() => chat.clearMessages()} className="flex items-center gap-1.5 md:gap-2 text-base-content/40 hover:text-warning transition-colors text-[9px] md:text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] leading-none">
-                      <Trash2 size={13} /> Clear
-                    </button>
-                    <button onClick={chat.leaveSession} className="flex items-center gap-1.5 md:gap-2 text-base-content/40 hover:text-red-400 transition-colors text-[9px] md:text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] leading-none">
-                      <LogOut size={13} /> Leave
+                  <div className="flex items-end h-full pb-1">
+                    <button onClick={handleSend} disabled={!draft.trim()} className="btn bg-[#1D4ED8] hover:bg-[#1e40af] disabled:bg-base-content/10 disabled:text-base-content/30 disabled:shadow-none text-white btn-circle shrink-0 h-[44px] w-[44px] shadow-lg shadow-[#1D4ED8]/20 border-none transition-all duration-200 flex items-center justify-center">
+                      <Send size={18} className="ml-0.5" />
                     </button>
                   </div>
-                  <div className="flex items-center gap-2 text-base-content/20 select-none text-[10px] font-black uppercase tracking-[0.2em] leading-none">
-                    <IconShield /> <span>Private</span>
+                </div>
+                <div className="flex items-center justify-between px-1 md:px-2 mt-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button onClick={handleNext} className="flex items-center gap-1 text-base-content/40 hover:text-[#1D4ED8] transition-colors text-[9px] font-black uppercase tracking-widest leading-none group">
+                      <Zap size={12} className="group-hover:fill-current" /> Next
+                    </button>
+                    <button onClick={() => chat.clearMessages()} className="flex items-center gap-1 text-base-content/40 hover:text-warning transition-colors text-[9px] font-black uppercase tracking-widest leading-none">
+                      <Trash2 size={12} /> Clear
+                    </button>
+                    <button onClick={chat.leaveSession} className="flex items-center gap-1 text-base-content/40 hover:text-red-400 transition-colors text-[9px] font-black uppercase tracking-widest leading-none">
+                      <LogOut size={12} /> Leave
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5 select-none pt-0.5 opacity-0 pointer-events-none">
+                    {/* Hidden spacer to keep left alignment intact */}
+                    <IconShield />
                   </div>
                 </div>
               </div>
@@ -405,31 +410,31 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                 <h2 className="text-base-content font-bold text-sm tracking-wide">Preview Media</h2>
                 <div className="w-8" />
               </div>
-              <div className="flex-1 min-h-0 bg-base-300/30 flex items-center justify-center p-4 relative overflow-hidden">
+              <div className="flex-1 min-h-[30vh] max-h-[50vh] bg-base-300/30 flex items-center justify-center p-4 relative overflow-hidden">
                 <div className="absolute inset-0 pattern-dots pattern-base-content pattern-bg-transparent pattern-opacity-5 pattern-size-4" />
-                <div className="relative z-10 w-full h-[30vh] md:h-[40vh] flex items-center justify-center">
+                <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
                   {mediaPreview.type === "IMAGE" ? (
-                    <img src={mediaPreview.url} alt="preview" className="max-w-full max-h-full object-contain rounded-xl shadow-lg ring-1 ring-base-content/5" />
+                    <img src={mediaPreview.url} alt="preview" className="max-w-[100%] max-h-[100%] aspect-auto object-contain rounded-xl shadow-lg ring-1 ring-base-content/5" />
                   ) : (
-                    <video src={mediaPreview.url} controls className="max-w-full max-h-full rounded-xl shadow-lg ring-1 ring-base-content/5 bg-black/5" />
+                    <video src={mediaPreview.url} controls className="max-w-[100%] max-h-[100%] aspect-auto rounded-xl shadow-lg ring-1 ring-base-content/5 bg-black/5" />
                   )}
                 </div>
               </div>
-              <div className="p-6 md:p-8 shrink-0 bg-base-100 flex flex-col gap-6 rounded-t-[32px] relative -mt-6">
-                <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-base-200 border border-base-content/5 cursor-pointer" onClick={() => setMediaPreview({ ...mediaPreview, viewOnce: !mediaPreview.viewOnce })}>
-                  <div className="flex items-center gap-3.5">
-                    <div className={`p-2.5 rounded-[14px] transition-colors ${mediaPreview.viewOnce ? "bg-warning/20 text-warning" : "bg-base-content/5 text-base-content/40"}`}>
-                      {mediaPreview.viewOnce ? <EyeOff size={18} /> : <Eye size={18} />}
+              <div className="p-4 md:p-6 shrink-0 bg-base-100 flex flex-col gap-4 rounded-t-[32px] relative -mt-4">
+                <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-base-200 border border-base-content/5 cursor-pointer" onClick={() => setMediaPreview({ ...mediaPreview, viewOnce: !mediaPreview.viewOnce })}>
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-xl transition-colors ${mediaPreview.viewOnce ? "bg-warning/20 text-warning" : "bg-base-content/5 text-base-content/40"}`}>
+                      {mediaPreview.viewOnce ? <EyeOff size={16} /> : <Eye size={16} />}
                     </div>
                     <div>
-                      <p className="text-[13px] font-bold text-base-content mb-0.5">View Once</p>
-                      <p className="text-[11px] text-base-content/50 font-medium">{mediaPreview.viewOnce ? "Media vanishes after opening" : "Standard permanent view"}</p>
+                      <p className="text-xs font-bold text-base-content mb-0.5">View Once</p>
+                      <p className="text-[10px] text-base-content/50 font-medium">{mediaPreview.viewOnce ? "Media vanishes after opening" : "Standard permanent view"}</p>
                     </div>
                   </div>
-                  <input type="checkbox" className="toggle toggle-primary toggle-sm" checked={mediaPreview.viewOnce} readOnly />
+                  <input type="checkbox" className="toggle toggle-primary toggle-sm scale-90" checked={mediaPreview.viewOnce} readOnly />
                 </div>
-                <button onClick={handleSendMedia} disabled={isUploading} className="btn bg-[#00a884] hover:bg-[#128C7E] disabled:bg-[#00a884]/50 disabled:text-white/50 text-white w-full h-14 rounded-2xl font-bold text-[15px] shadow-lg shadow-[#00a884]/20 border-none flex items-center justify-center gap-2">
-                  {isUploading ? <span className="loading loading-spinner" /> : <>Send to Stranger <Send size={18} /></>}
+                <button onClick={handleSendMedia} disabled={isUploading} className="btn bg-[#1D4ED8] hover:bg-[#1e40af] disabled:bg-[#1D4ED8]/50 disabled:text-white/50 text-white w-full h-12 rounded-2xl font-bold text-[14px] shadow-lg shadow-[#1D4ED8]/20 border-none flex items-center justify-center gap-2">
+                  {isUploading ? <span className="loading loading-spinner loading-sm" /> : <>Send to Stranger <Send size={16} /></>}
                 </button>
               </div>
             </motion.div>
@@ -451,7 +456,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
   }
 
   return (
-    <div className={standalone ? "w-full h-full bg-base-100" : "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm md:p-4"} onClick={handleBackdrop}>
+    <div className={standalone ? "w-full h-full flex flex-col flex-1 min-h-0 bg-base-100" : "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm md:p-4"} onClick={handleBackdrop}>
       {renderContent()}
     </div>
   );
@@ -475,7 +480,7 @@ function IdleScreen({ onStart }: { onStart: () => void }) {
       <motion.button initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onStart} className="btn bg-[#1D4ED8] hover:bg-[#1D4ED8]/90 text-white w-full max-w-[280px] h-14 md:h-16 rounded-2xl md:rounded-[24px] font-black text-sm uppercase tracking-[0.2em] mt-8 md:mt-12 shadow-2xl shadow-[#1D4ED8]/20 border-none">
         Start Chatting
       </motion.button>
-      <div className="flex flex-col gap-3 mt-12 md:mt-16 text-base-content/20 text-[10px] uppercase font-black tracking-[0.3em]"><IconShield /> <span>Private Relay Active</span></div>
+      <div className="flex items-center justify-center gap-2 mt-12 md:mt-16 text-base-content/20 text-[10px] uppercase font-black tracking-[0.3em]"><IconShield /> <span>Private Relay Active</span></div>
     </div>
   );
 }
@@ -515,7 +520,7 @@ function MessageArea({ messages, myId, partnerTyping, bottomRef, onReply }: { me
   const hasSentMessage = messages.some(m => m.senderId === myId);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 md:py-8 md:px-8 custom-scrollbar scroll-smooth flex flex-col gap-2">
+    <div className="flex-1 overflow-y-auto p-2 md:p-4 custom-scrollbar scroll-smooth flex flex-col gap-2 relative">
       <div className="mb-auto" />
 
       <AnimatePresence>
@@ -580,7 +585,7 @@ function Bubble({ msg, isMine, allMessages, onReply }: { msg: ChatMessageDto; is
   const replyIconOpacity = useTransform(dragX, [0, 50, 80], [0, 0.5, 1]);
 
   const isSystem = msg.senderId === "SYSTEM" || msg.messageType === "SYSTEM" || msg.messageType === "USER_LEFT" || msg.messageType === "CHAT_ENDED" || msg.messageType === "USER_JOINED";
-  if (isSystem) return <div className="w-full flex justify-center py-6 px-10"><p className="text-[10px] text-base-content/20 uppercase tracking-[0.3em] font-black text-center leading-relaxed max-w-[80%]">{msg.content}</p></div>;
+  if (isSystem) return <div className="w-full flex justify-center py-4 px-4 my-2"><div className="px-4 py-2 rounded-2xl bg-base-content/5 border border-base-content/10"><p className="text-[10px] text-base-content/50 uppercase tracking-[0.2em] font-black text-center leading-none">{msg.content}</p></div></div>;
 
   const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
   const repliedMsg = msg.replyToId ? allMessages.find(m => m.messageId === msg.replyToId || (m.messageId.startsWith('local-') && m.messageId === msg.replyToId)) : null;
@@ -596,9 +601,9 @@ function Bubble({ msg, isMine, allMessages, onReply }: { msg: ChatMessageDto; is
       );
     }
     if (msg.viewOnce && !showViewOnce) return <div onClick={() => setShowViewOnce(true)} className="relative w-72 aspect-video rounded-3xl bg-[#1D4ED8]/10 backdrop-blur-3xl flex flex-col items-center justify-center gap-4 cursor-pointer group/vo border border-[#1D4ED8]/20 hover:bg-[#1D4ED8]/20 transition-colors"><div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-[#1D4ED8] shadow-2xl transition-transform group-hover/vo:scale-110"><EyeOff size={32} /></div><p className="text-[10px] font-black text-[#1D4ED8] uppercase tracking-[0.4em]">Unlock Private Media</p></div>;
-    return <div className="relative overflow-hidden rounded-2xl bg-base-100 shadow-2xl ring-1 ring-[#1D4ED8]/10">
-      {msg.messageType === "IMAGE" ? <img src={msg.mediaPayload} className="max-w-full max-h-[500px] object-cover cursor-pointer" onClick={() => window.open(msg.mediaPayload, "_blank")} alt="" /> : <video src={msg.mediaPayload} controls className="max-w-full max-h-[500px]" onEnded={() => msg.viewOnce && setShowViewOnce(false)} />}
-      {msg.viewOnce && <div className="absolute top-4 right-4 px-3 py-1.5 bg-[#1D4ED8] backdrop-blur-md rounded-xl text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2 shadow-xl shrink-0"><EyeOff size={14} /> One-Time View</div>}
+    return <div className={`relative overflow-hidden rounded-[14px] bg-base-100 flex items-center justify-center ${isMine ? "bg-transparent ring-0 shadow-none border-0" : "shadow-sm ring-1 ring-base-content/5 bg-black/5"}`}>
+      {msg.messageType === "IMAGE" ? <img src={msg.mediaPayload} className={`max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto object-cover cursor-pointer ${isMine ? "rounded-[14px]" : ""}`} onClick={() => window.open(msg.mediaPayload, "_blank")} alt="" /> : <video src={msg.mediaPayload} controls className="max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto" onEnded={() => msg.viewOnce && setShowViewOnce(false)} />}
+      {msg.viewOnce && <div className="absolute top-2 right-2 px-2 py-1 bg-[#1D4ED8] backdrop-blur-md rounded-lg text-[9px] font-black text-white uppercase flex items-center gap-1 shadow-lg shrink-0"><EyeOff size={11} /> View Once</div>}
     </div>;
   };
 
@@ -631,9 +636,9 @@ function Bubble({ msg, isMine, allMessages, onReply }: { msg: ChatMessageDto; is
           ${msg.messageType === "STICKER"
             ? "bg-transparent shadow-none"
             : isMine
-              ? "bg-[#00a884] text-white shadow-sm"
+              ? "bg-[#1D4ED8] text-white shadow-sm"
               : "bg-base-content/5 backdrop-blur-xl text-base-content border border-base-content/5 shadow-sm"
-          } ${isMedia ? "p-1" : "px-3.5 py-2"}`}
+          } ${isMedia ? "p-0 bg-transparent border-none shadow-none" : "px-3.5 py-2"}`}
       >
         {repliedMsg && (
           <div className={`mb-2 pl-2 border-l-2 transition-colors ${isMine ? "border-white/40 bg-white/5" : "border-[#1D4ED8]/60 bg-[#1D4ED8]/5"

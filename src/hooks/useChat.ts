@@ -137,6 +137,7 @@ export function useChat(): UseChatReturn {
   const pollRef          = useRef<ReturnType<typeof setInterval> | null>(null);
   const typingResetRef   = useRef<ReturnType<typeof setTimeout>  | null>(null);
   const typingThrottleTs = useRef<number>(0);
+  const searchActiveRef  = useRef<boolean>(false);
 
   // Keep latest session accessible in socket handlers without stale closure
   const sessionRef = useRef<ChatSessionDto | null>(null);
@@ -347,6 +348,7 @@ export function useChat(): UseChatReturn {
   // ── Public API ────────────────────────────────────────────────────────────
 
   const startSearch = useCallback(async () => {
+    searchActiveRef.current = true;
     setError(null);
     setMessages([]);
     setSession(null);
@@ -358,6 +360,12 @@ export function useChat(): UseChatReturn {
 
     try {
       const res = await chatApi.startSearch();
+      if (!searchActiveRef.current) {
+        // User cancelled while request was in-flight
+        chatApi.cancelSearch().catch(() => {});
+        return;
+      }
+
       if (!res.success) throw new Error(res.message ?? "Search failed");
 
       if (res.data?.matched && res.data.session) {
@@ -368,6 +376,7 @@ export function useChat(): UseChatReturn {
         _startPolling();
       }
     } catch (err: unknown) {
+      if (!searchActiveRef.current) return; // ignore errors if cancelled
       const msg = err instanceof Error ? err.message : "";
       if (err instanceof ChatAuthError) {
         setError("Session expired — please log in again.");
@@ -395,9 +404,10 @@ export function useChat(): UseChatReturn {
   }, [onMatchSuccess, _startPolling]);
 
   const cancelSearch = useCallback(async () => {
+    searchActiveRef.current = false;
     _stopPolling();
-    try { await chatApi.cancelSearch(); } catch { /* fire-and-forget */ }
     setStatus("IDLE");
+    chatApi.cancelSearch().catch(() => { /* fire-and-forget */ });
   }, []);
 
   const sendMessage = useCallback((content: string, replyToId?: string) => {
