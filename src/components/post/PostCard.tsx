@@ -39,9 +39,23 @@ async function apiFetch(url: string, method: string, body?: unknown): Promise<un
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
+
   if (res.status === 204) return null;
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json().catch(() => null);
+
+  const text = await res.text();
+  let json: any;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    const errorMsg = json?.message || json?.error || text || `${res.status}`;
+    throw new Error(`${res.status} - ${errorMsg}`);
+  }
+
+  return json?.data ?? json;
 }
 
 const apiPost = (url: string, body: unknown) => apiFetch(url, "POST", body);
@@ -1003,7 +1017,10 @@ export default function PostCard({
     }));
 
     try {
-      await apiPost(`/api/interactions/${interactionType}/${post.id}/save`, {});
+      const res = await apiPost(`/api/interactions/${interactionType}/${post.id}/save`, {});
+      const data = (res as any)?.data ?? res;
+      if (data && typeof data.saved === "boolean") setSaved(data.saved);
+      else if (data && typeof data.isSaved === "boolean") setSaved(data.isSaved);
     } catch {
       setSaved(!next);
       window.dispatchEvent(new CustomEvent('POST_SYNC', {

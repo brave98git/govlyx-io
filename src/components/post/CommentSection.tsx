@@ -29,7 +29,8 @@ function authHeaders(): HeadersInit {
 async function apiFetch(url: string) {
   const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
+  const data = await res.json();
+  return data?.data ?? data;
 }
 
 async function apiPost(url: string, body: unknown) {
@@ -38,17 +39,21 @@ async function apiPost(url: string, body: unknown) {
     headers: authHeaders(),
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    let msg = `${res.status}`;
-    try {
-      const errRes = await res.json();
-      msg += ` - ${errRes.message || JSON.stringify(errRes)}`;
-    } catch {
-      msg += ` - ${await res.text()}`;
-    }
-    throw new Error(msg);
+  
+  const text = await res.text();
+  let json: any;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = null;
   }
-  return res.json();
+
+  if (!res.ok) {
+    const errorMsg = json?.message || json?.error || text || `${res.status}`;
+    throw new Error(`${res.status} - ${errorMsg}`);
+  }
+  
+  return json?.data ?? json;
 }
 
 async function apiPut(url: string, body: unknown) {
@@ -57,8 +62,21 @@ async function apiPut(url: string, body: unknown) {
     headers: authHeaders(),
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
+  
+  const text = await res.text();
+  let json: any;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    const errorMsg = json?.message || json?.error || text || `${res.status}`;
+    throw new Error(`${res.status} - ${errorMsg}`);
+  }
+  
+  return json?.data ?? json;
 }
 
 async function apiDelete(url: string) {
