@@ -10,7 +10,7 @@ import PostCard from "../components/post/PostCard";
 import PostSkeleton from "../components/post/PostSkeleton";
 import type { AnyPost, CurrentUser } from "../components/post/PostCard";
 import { useCurrentUser } from "../hooks/useUser";
-import { toPostCardPost } from "../utils/postUtils";
+import { toPostCardPost, resolveMediaUrl } from "../utils/postUtils";
 import { postService } from "../api/postService";
 
 // ─── auth helpers ─────────────────────────────────────────────────────────────
@@ -111,6 +111,7 @@ const Profile = () => {
         setSocialPosts(prev => prev.filter(p => p.id !== id));
         setSocialCount(n => Math.max(0, n - 1));
       }
+      setActivity(prev => prev.filter(p => p.id !== id));
     } catch (err) {
       console.error("Delete failed", err);
       alert("Failed to delete content. Please try again later.");
@@ -386,7 +387,7 @@ const Profile = () => {
           <div className="avatar">
             <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-red-400 shadow-lg bg-base-300">
               <img
-                src={user?.profileImage || `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(username)}`}
+                src={user?.profileImage ? resolveMediaUrl(user.profileImage) : `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(username)}`}
                 alt="Profile Avatar"
                 className="w-full h-full object-cover"
               />
@@ -509,6 +510,7 @@ const Profile = () => {
                 post={post}
                 currentUser={currentUser}
                 onVote={handleVote}
+                onDelete={(id) => handleDelete(post.variant === 'issue' ? 'posts' : 'social-posts', id)}
               />
             ))
           )}

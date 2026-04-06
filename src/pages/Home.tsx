@@ -8,6 +8,7 @@ import PostSkeleton from "../components/post/PostSkeleton";
 import axiosInstance from "../api/axiosConfig";
 import { toPostCardPost } from "../utils/postUtils";
 import { postService } from "../api/postService";
+import { useCurrentUser } from "../hooks/useUser";
 
 
 const FEED_SIZE = 20;
@@ -154,6 +155,13 @@ const SORT_TABS: { key: "hot" | "new" | "top"; label: string; icon: any }[] = [
 ];
 
 const Home = () => {
+  const { data: user } = useCurrentUser();
+  const currentUser = user ? {
+    id: user.id,
+    username: user.actualUsername || user.username,
+    role: user.role
+  } : undefined;
+
   const [sourceTab, setSourceTab] = useState<"all" | "location" | "following" | "official">("all");
   const [sortTab, setSortTab] = useState<"hot" | "new" | "top">("hot");
   const [showFilters, setShowFilters] = useState(false);
@@ -321,6 +329,7 @@ const Home = () => {
             <div key={`${post.id}-${post.variant}`} className="w-full">
               <PostCard
                 post={post}
+                currentUser={currentUser}
                 onLike={handleLike}
                 onSave={handleSave}
                 onShare={handleShare}

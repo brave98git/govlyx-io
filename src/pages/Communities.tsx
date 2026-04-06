@@ -22,6 +22,7 @@ import CreatePost from "../components/ui/CreatePost";
 import PostCard from "../components/post/PostCard";
 import PostSkeleton from "../components/post/PostSkeleton";
 import type { CurrentUser as CardUser, CommunityPost } from "../components/post/PostCard";
+import { toPostCardPost } from "../utils/postUtils";
 import { jwtDecode } from "jwt-decode";
 import { postService } from "../api/postService";
 
@@ -1889,30 +1890,17 @@ function DetailPanel({
                       </div>
                     )}
                     {posts.map(post => {
-                      const cardPost: CommunityPost = {
-                        id: post.id,
-                        variant: "community",
-                        content: post.content,
-                        username: post.authorUsername || "User",
-                        userDisplayName: post.authorUsername,
-                        userProfileImage: post.authorProfileImage,
-                        authorRole: post.authorRole,
-                        likeCount: post.likeCount || 0,
-                        commentCount: post.commentCount || 0,
-                        shareCount: post.shareCount || 0,
-                        isLikedByCurrentUser: post.isLikedByMe,
+                      const cardPost = toPostCardPost({
+                        ...post,
+                        variant: "social",
+                        username: post.authorUsername,
                         communityId: c.id,
                         communityName: c.name,
                         communityAvatar: c.avatarUrl || undefined,
                         communityMemberCount: String(c.memberCount || 0),
                         isMember: c.isMember,
-
-
-                        timeAgo: post.timeAgo || (post.createdAt ? relTime(post.createdAt) : ""),
-                        mediaUrls: post.mediaUrls || (post.imageUrl ? [post.imageUrl] : []),
-                      };
-
-
+                        isLikedByCurrentUser: post.isLikedByMe,
+                      });
                       return (
                         <PostCard
                           key={post.id}

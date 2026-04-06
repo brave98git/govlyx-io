@@ -14,8 +14,10 @@ import {
   Search, X, Hash, Users, FileText, Loader2, AlertCircle, ChevronDown, ChevronUp,
 } from "lucide-react";
 import PostCard from "../post/PostCard";
-import type { AnyPost, SocialPost, GovernmentPost } from "../post/PostCard";
+import { toPostCardPost } from "../../utils/postUtils";
+import { useCurrentUser } from "../../hooks/useUser";
 import { API_BASE_URL } from "../../api/axiosConfig";
+
 
 // ─── Raw backend shape — defensive: accept every possible field name ──────────
 // SearchDto.Result fields (from SearchService builder calls):
@@ -109,18 +111,7 @@ function authHeaders(): HeadersInit {
 }
 
 // ─── Post mapper ──────────────────────────────────────────────────────────────
-
-function dtoToAnyPost(dto: Record<string, unknown>): AnyPost {
-  if (dto.isGovernmentBroadcast) {
-    return {
-      ...dto,
-      variant: "government",
-      department: dto.department ?? dto.userDisplayName ?? dto.username,
-      isGovernmentBroadcast: true,
-    } as GovernmentPost;
-  }
-  return { ...dto, variant: "social" } as unknown as SocialPost;
-}
+// Replaced by toPostCardPost from postUtils
 
 // ─── useDebounce ──────────────────────────────────────────────────────────────
 
@@ -420,6 +411,13 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
   const debouncedInput = useDebounce(inputValue, 300);
   const { results, loading, initialLoading, hasMore, error, loadMore } = useFullSearch(committedQuery);
 
+  const { data: user } = useCurrentUser();
+  const currentUser = user ? {
+    id: user.id,
+    username: user.actualUsername || user.username,
+    role: user.role
+  } : undefined;
+
   useEffect(() => {
     if (open) {
       setInputValue(initialQuery);
@@ -574,11 +572,12 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
               <div className="space-y-3">
                 {postResults.map((r, i) => {
                   if (!r.postDto) return DEBUG ? <DebugPanel key={i} raw={r._raw} /> : null;
-                  const post = dtoToAnyPost(r.postDto);
+                  const post = toPostCardPost(r.postDto);
                   return (
                     <PostCard
                       key={`${r.kind}-${r.id ?? i}`}
                       post={post}
+                      currentUser={currentUser}
                       onLike={(id, liked) => console.log("like", id, liked)}
                       onSave={(id, saved) => console.log("save", id, saved)}
                       onShare={(id) => navigator.clipboard?.writeText(`${window.location.origin}/post/${id}`).catch(() => {})}

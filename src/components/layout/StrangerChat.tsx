@@ -1,7 +1,7 @@
 // src/components/layout/StrangerChat.tsx
 import { useEffect, useRef, useState, useCallback, useMemo, type KeyboardEvent } from "react";
 import { Dices, Zap, Search, AlertTriangle, Plus, Image as ImageIcon, Video, X, Eye, EyeOff, Send, Trash2, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "../../hooks/useChat";
 import { sendMedia } from "../../api/chatApi.service";
 import type { ChatMessageDto, ChatStatus, MessageType } from "../../types/Chat.types";
@@ -63,7 +63,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showStickerMenu, setShowStickerMenu] = useState(false);
   const [mediaPreviews, setMediaPreviews] = useState<MediaPreview[]>([]);
-  const [fullscreenMedia, setFullscreenMedia] = useState<{ items: {url: string, type: MessageType}[], index: number } | null>(null);
+  const [fullscreenMedia, setFullscreenMedia] = useState<{ items: { url: string, type: MessageType }[], index: number } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -158,7 +158,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       });
       reader.readAsDataURL(blob);
       const base64 = await base64Promise;
-      
+
       await sendMedia(chat.session.sessionId, {
         type: "STICKER",
         mediaPayload: base64,
@@ -356,7 +356,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                       </AnimatePresence>
                     </div>
                   </div>
-                  
+
                   {/* Primary Action Button (Send) */}
                   <div className="flex items-end h-full pb-1">
                     <button onClick={handleSend} disabled={!draft.trim()} className="btn bg-[#1D4ED8] hover:bg-[#1e40af] disabled:bg-base-content/10 disabled:text-base-content/30 disabled:shadow-none text-white btn-circle shrink-0 h-[44px] w-[44px] shadow-lg shadow-[#1D4ED8]/20 border-none transition-all duration-200 flex items-center justify-center">
@@ -473,7 +473,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                 <ChevronLeft size={32} />
               </button>
             )}
-            
+
             {fullscreenMedia.index < fullscreenMedia.items.length - 1 && (
               <button onClick={(e) => { e.stopPropagation(); setFullscreenMedia(prev => ({ ...prev!, index: prev!.index + 1 })) }} className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 p-3 md:p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md shadow-2xl border border-white/20 transition-all z-[110]">
                 <ChevronRight size={32} />
@@ -557,12 +557,12 @@ function ErrorScreen({ error, onRetry }: { error: string | null; onRetry: () => 
   );
 }
 
-function MessageArea({ messages, myId, partnerTyping, bottomRef, onReply, onMediaClick }: { messages: ChatMessageDto[]; myId: string; partnerTyping: boolean; bottomRef: React.RefObject<HTMLDivElement | null>; onReply: (r: { messageId: string; senderId: string; content?: string; messageType: MessageType }) => void; onMediaClick: (items: {url: string, type: MessageType}[], index: number) => void }) {
+function MessageArea({ messages, myId, partnerTyping, bottomRef, onReply, onMediaClick }: { messages: ChatMessageDto[]; myId: string; partnerTyping: boolean; bottomRef: React.RefObject<HTMLDivElement | null>; onReply: (r: { messageId: string; senderId: string; content?: string; messageType: MessageType }) => void; onMediaClick: (items: { url: string, type: MessageType }[], index: number) => void }) {
   // Chunk consecutive media messages sent within 60s
   const groupedMessages = useMemo(() => {
     const groups: ChatMessageDto[][] = [];
     let current: ChatMessageDto[] = [];
-    
+
     for (const msg of messages) {
       if (current.length === 0) {
         current.push(msg);
@@ -571,7 +571,7 @@ function MessageArea({ messages, myId, partnerTyping, bottomRef, onReply, onMedi
       const prev = current[current.length - 1];
       const isMedia = (m: ChatMessageDto) => m.messageType === "IMAGE" || m.messageType === "VIDEO";
       const timeDiff = new Date(msg.timestamp).getTime() - new Date(prev.timestamp).getTime();
-      
+
       if (prev.senderId === msg.senderId && isMedia(prev) && isMedia(msg) && !msg.viewOnce && !prev.viewOnce && !msg.replyToId && timeDiff < 60000) {
         current.push(msg);
       } else {
@@ -605,17 +605,17 @@ function MessageArea({ messages, myId, partnerTyping, bottomRef, onReply, onMedi
   );
 }
 
-function Bubble({ msgGroup, isMine, allMessages, onReply, onMediaClick }: { msgGroup: ChatMessageDto[]; isMine: boolean; allMessages: ChatMessageDto[]; onReply: (r: { messageId: string; senderId: string; content?: string; messageType: MessageType }) => void; onMediaClick: (items: {url: string, type: MessageType}[], index: number) => void }) {
+function Bubble({ msgGroup, isMine, allMessages, onReply, onMediaClick }: { msgGroup: ChatMessageDto[]; isMine: boolean; allMessages: ChatMessageDto[]; onReply: (r: { messageId: string; senderId: string; content?: string; messageType: MessageType }) => void; onMediaClick: (items: { url: string, type: MessageType }[], index: number) => void }) {
   const [hovered, setHovered] = useState(false);
   const [showViewOnce, setShowViewOnce] = useState(false);
 
   // We operate heavily on the last message for metadata (time, status)
   const msg = msgGroup[msgGroup.length - 1];
-  
+
   const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
   const repliedMsg = msg.replyToId ? allMessages.find(m => m.messageId === msg.replyToId || (m.messageId.startsWith('local-') && m.messageId === msg.replyToId)) : null;
   const truncate = (s: string, max = 50) => s.length > max ? s.slice(0, max) + "..." : s;
-  
+
   // Single media detection
   const isSingleMedia = msgGroup.length === 1 && (msg.messageType === "IMAGE" || msg.messageType === "VIDEO" || msg.messageType === "STICKER");
   const isMultiMedia = msgGroup.length > 1;
@@ -630,7 +630,7 @@ function Bubble({ msgGroup, isMine, allMessages, onReply, onMediaClick }: { msgG
     }
     if (msg.viewOnce && !showViewOnce) return <div onClick={() => setShowViewOnce(true)} className="relative w-72 aspect-video rounded-3xl bg-[#1D4ED8]/10 backdrop-blur-3xl flex flex-col items-center justify-center gap-4 cursor-pointer group/vo border border-[#1D4ED8]/20 hover:bg-[#1D4ED8]/20 transition-colors"><div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-[#1D4ED8] shadow-2xl transition-transform group-hover/vo:scale-110"><EyeOff size={32} /></div><p className="text-[10px] font-black text-[#1D4ED8] uppercase tracking-[0.4em]">Unlock Private Media</p></div>;
     return <div className={`relative overflow-hidden rounded-[14px] bg-base-100 flex items-center justify-center ${isMine ? "bg-transparent ring-0 shadow-none border-0" : "shadow-sm ring-1 ring-base-content/5 bg-black/5"}`}>
-      {msg.messageType === "IMAGE" ? <img src={msg.mediaPayload} className={`max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto object-cover cursor-pointer ${isMine ? "rounded-[14px]" : ""}`} onClick={() => onMediaClick([{url: msg.mediaPayload!, type: msg.messageType}], 0)} alt="" /> : <video src={msg.mediaPayload} controls className="max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto" onEnded={() => msg.viewOnce && setShowViewOnce(false)} />}
+      {msg.messageType === "IMAGE" ? <img src={msg.mediaPayload} className={`max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto object-cover cursor-pointer ${isMine ? "rounded-[14px]" : ""}`} onClick={() => onMediaClick([{ url: msg.mediaPayload!, type: msg.messageType }], 0)} alt="" /> : <video src={msg.mediaPayload} controls className="max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto" onEnded={() => msg.viewOnce && setShowViewOnce(false)} />}
       {msg.viewOnce && <div className="absolute top-2 right-2 px-2 py-1 bg-[#1D4ED8] backdrop-blur-md rounded-lg text-[9px] font-black text-white uppercase flex items-center gap-1 shadow-lg shrink-0"><EyeOff size={11} /> View Once</div>}
     </div>;
   };
@@ -641,7 +641,7 @@ function Bubble({ msgGroup, isMine, allMessages, onReply, onMediaClick }: { msgG
         {msgGroup.map((m, idx) => (
           <div key={m.messageId} className="shrink-0 w-[140px] md:w-[160px] snap-center rounded-[10px] overflow-hidden bg-black/5 relative aspect-square">
             {m.messageType === "IMAGE" ? (
-              <img src={m.mediaPayload} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onMediaClick(msgGroup.map(g => ({url: g.mediaPayload!, type: g.messageType})), idx)} alt="" />
+              <img src={m.mediaPayload} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onMediaClick(msgGroup.map(g => ({ url: g.mediaPayload!, type: g.messageType })), idx)} alt="" />
             ) : (
               <video src={m.mediaPayload} controls className="w-full h-full object-cover" />
             )}
