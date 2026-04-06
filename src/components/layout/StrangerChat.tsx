@@ -1,10 +1,11 @@
 // src/components/layout/StrangerChat.tsx
-import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from "react";
-import { Dices, Zap, Search, AlertTriangle, Plus, Image as ImageIcon, Video, X, Eye, EyeOff, Send, Trash2, LogOut } from "lucide-react";
+import { useEffect, useRef, useState, useCallback, useMemo, type KeyboardEvent } from "react";
+import { Dices, Zap, Search, AlertTriangle, Plus, Image as ImageIcon, Video, X, Eye, EyeOff, Send, Trash2, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { useChat } from "../../hooks/useChat";
 import { sendMedia } from "../../api/chatApi.service";
 import type { ChatMessageDto, ChatStatus, MessageType } from "../../types/Chat.types";
+import { OPENMOJI_STICKERS } from "../../utils/stickers";
 
 // ── Icons & Config ──────────────────────────────────────────────────────────
 
@@ -61,7 +62,8 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
   const [replyTo, setReplyTo] = useState<ReplyTo | null>(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showStickerMenu, setShowStickerMenu] = useState(false);
-  const [mediaPreview, setMediaPreview] = useState<MediaPreview | null>(null);
+  const [mediaPreviews, setMediaPreviews] = useState<MediaPreview[]>([]);
+  const [fullscreenMedia, setFullscreenMedia] = useState<{ items: {url: string, type: MessageType}[], index: number } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -79,7 +81,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
   useEffect(() => {
     if (chat.status !== "CONNECTED") {
       setReplyTo(null);
-      setMediaPreview(null);
+      setMediaPreviews([]);
       setShowAttachMenu(false);
     }
   }, [chat.status]);
@@ -94,44 +96,47 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
   const handleFileSelect = (type: "IMAGE" | "VIDEO") => {
     if (fileInputRef.current) {
       fileInputRef.current.accept = type === "IMAGE" ? "image/*" : "video/*";
+      fileInputRef.current.multiple = true;
       fileInputRef.current.click();
     }
     setShowAttachMenu(false);
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setMediaPreview({
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const newPreviews = files.map(file => ({
       file,
-      url,
-      type: file.type.startsWith("video/") ? "VIDEO" : "IMAGE",
+      url: URL.createObjectURL(file),
+      type: (file.type.startsWith("video/") ? "VIDEO" : "IMAGE") as "IMAGE" | "VIDEO",
       viewOnce: false
-    });
+    }));
+    setMediaPreviews(prev => [...prev, ...newPreviews]);
     e.target.value = "";
   };
 
   const handleSendMedia = async () => {
-    if (!mediaPreview || !chat.session) return;
+    if (mediaPreviews.length === 0 || !chat.session) return;
     setIsUploading(true);
     try {
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
-      });
-      reader.readAsDataURL(mediaPreview.file);
-      const base64 = await base64Promise;
+      for (const preview of mediaPreviews) {
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+        });
+        reader.readAsDataURL(preview.file);
+        const base64 = await base64Promise;
 
-      await sendMedia(chat.session.sessionId, {
-        type: mediaPreview.type,
-        mediaPayload: base64,
-        mimeType: mediaPreview.file.type,
-        mediaName: mediaPreview.file.name,
-        viewOnce: mediaPreview.viewOnce,
-        replyToId: replyTo?.messageId
-      });
-      setMediaPreview(null);
+        await sendMedia(chat.session.sessionId, {
+          type: preview.type,
+          mediaPayload: base64,
+          mimeType: preview.file.type,
+          mediaName: preview.file.name,
+          viewOnce: preview.viewOnce,
+          replyToId: replyTo?.messageId
+        });
+      }
+      setMediaPreviews([]);
       setReplyTo(null);
     } catch (err) {
       console.error("Upload failed", err);
@@ -177,7 +182,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
     if (e.key === "Escape") {
       e.preventDefault();
       setReplyTo(null);
-      setMediaPreview(null);
+      setMediaPreviews([]);
       setShowAttachMenu(false);
       setShowStickerMenu(false);
     }
@@ -262,6 +267,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                 partnerTyping={chat.partnerTyping}
                 bottomRef={bottomRef}
                 onReply={(msg) => setReplyTo({ messageId: msg.messageId, senderId: msg.senderId, content: msg.content, messageType: msg.messageType })}
+                onMediaClick={(items, index) => setFullscreenMedia({ items, index })}
               />
             </motion.div>
           )}
@@ -274,7 +280,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       </main>
 
       {/* ── Footer ── */}
-      <footer className="shrink-0 p-2 md:p-4 pb-4 md:pb-6 relative z-30">
+      <footer className="shrink-0 p-2 md:p-4 pb-1 md:pb-2 relative z-30">
         {(chat.status === "CONNECTED" || chat.status === "PARTNER_LEFT") && (
           <div className="max-w-[1000px] mx-auto">
             <AnimatePresence>
@@ -307,22 +313,12 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
 
                     <AnimatePresence>
                       {showStickerMenu && (
-                        <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="absolute bottom-full left-0 mb-4 w-64 bg-base-200 border border-base-content/10 shadow-2xl rounded-2xl p-3 z-50">
-                          <p className="text-xs font-bold text-base-content/50 mb-2 uppercase tracking-widest px-1">Stickers</p>
-                          <div className="grid grid-cols-4 gap-2">
-                            {/* Simple predefined sticker list (Twemoji URLs) */}
-                            {[
-                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f602.svg", // 😂
-                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/2764.svg", // ❤️
-                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f525.svg", // 🔥
-                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f44d.svg", // 👍
-                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f62d.svg", // 😭
-                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f64f.svg", // 🙏
-                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f4a5.svg", // 💥
-                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f973.svg"  // 🥳
-                            ].map((url, i) => (
+                        <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="absolute bottom-full left-0 mb-4 w-72 h-80 bg-base-200 border border-base-content/10 shadow-2xl rounded-2xl p-3 z-50 flex flex-col">
+                          <p className="text-xs font-bold text-base-content/50 mb-2 uppercase tracking-widest px-1 shrink-0">Stickers</p>
+                          <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-4 gap-2 pr-1">
+                            {OPENMOJI_STICKERS.map((url, i) => (
                               <button key={i} onClick={() => handleSendSticker(url)} className="p-2 hover:bg-base-300 rounded-lg transition-colors aspect-square flex items-center justify-center">
-                                <img src={url} alt="Sticker" className="w-full h-full object-contain drop-shadow-md" />
+                                <img src={url} alt="Sticker" loading="lazy" className="w-full h-full object-contain drop-shadow-sm hover:scale-110 transition-transform" />
                               </button>
                             ))}
                           </div>
@@ -337,7 +333,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                       onChange={(e) => { setDraft(e.target.value); chat.notifyTyping(); }}
                       onKeyDown={handleKeyDown}
                       placeholder="Message"
-                      className="flex-1 bg-transparent border-none text-base-content focus:ring-0 placeholder-base-content/40 resize-none py-[10px] px-2 text-[15px] max-h-32 min-h-[20px] leading-relaxed"
+                      className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-base-content placeholder-base-content/40 resize-none py-[10px] px-2 text-[15px] max-h-32 min-h-[20px] leading-relaxed shadow-none"
                     />
 
                     <div className="relative group/attach flex items-end shrink-0 mb-[2px] right-1">
@@ -400,44 +396,89 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       </footer>
 
       {/* ── Media Preview Sheet ── */}
+      {/* ── Media Preview Sheet ── */}
       <AnimatePresence>
-        {mediaPreview && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMediaPreview(null)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="absolute bottom-0 left-0 right-0 z-50 bg-base-200 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] rounded-t-[32px] flex flex-col max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+        {mediaPreviews.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMediaPreviews([])}>
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="absolute bottom-0 left-0 right-0 z-50 bg-base-200 shadow-[0_-20px_60px_rgba(0,0,0,0.3)] rounded-t-[32px] flex flex-col h-[85dvh] max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between p-4 px-6 relative shrink-0">
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-base-content/10" />
-                <button onClick={() => setMediaPreview(null)} className="btn btn-ghost btn-sm btn-circle text-base-content/50 hover:text-base-content"><X size={20} /></button>
-                <h2 className="text-base-content font-bold text-sm tracking-wide">Preview Media</h2>
+                <button onClick={() => setMediaPreviews([])} className="btn btn-ghost btn-sm btn-circle text-base-content/50 hover:text-base-content"><X size={20} /></button>
+                <h2 className="text-base-content font-bold text-sm tracking-wide">Preview Media ({mediaPreviews.length})</h2>
                 <div className="w-8" />
               </div>
-              <div className="flex-1 min-h-[30vh] max-h-[50vh] bg-base-300/30 flex items-center justify-center p-4 relative overflow-hidden">
-                <div className="absolute inset-0 pattern-dots pattern-base-content pattern-bg-transparent pattern-opacity-5 pattern-size-4" />
-                <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
-                  {mediaPreview.type === "IMAGE" ? (
-                    <img src={mediaPreview.url} alt="preview" className="max-w-[100%] max-h-[100%] aspect-auto object-contain rounded-xl shadow-lg ring-1 ring-base-content/5" />
-                  ) : (
-                    <video src={mediaPreview.url} controls className="max-w-[100%] max-h-[100%] aspect-auto rounded-xl shadow-lg ring-1 ring-base-content/5 bg-black/5" />
-                  )}
-                </div>
+              <div className="flex-1 min-h-0 w-full bg-base-300/30 flex items-center justify-start py-6 px-4 md:px-8 relative overflow-x-auto gap-4 md:gap-5 snap-x custom-scrollbar">
+                <div className="absolute inset-0 pattern-dots pattern-base-content pattern-bg-transparent pattern-opacity-5 pattern-size-4 pointer-events-none" />
+                {mediaPreviews.map((preview, i) => (
+                  <div key={i} className="relative z-10 w-[82vw] max-w-[340px] shrink-0 h-full max-h-[100%] flex items-center justify-center p-2 md:p-3 snap-center bg-base-100 rounded-[24px] shadow-sm border border-base-content/5">
+                    {preview.type === "IMAGE" ? (
+                      <img src={preview.url} alt="preview" className="max-w-full max-h-full object-contain drop-shadow-md rounded-[16px]" />
+                    ) : (
+                      <video src={preview.url} controls className="max-w-full max-h-full object-contain drop-shadow-md rounded-[16px] bg-black/5" />
+                    )}
+                    <button onClick={() => setMediaPreviews(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-3 right-3 md:-top-3 md:-right-2 btn btn-circle btn-sm shadow-xl bg-base-100 hover:bg-error hover:text-white border-base-content/10 text-base-content z-20"><X size={16} /></button>
+                  </div>
+                ))}
+                <div className="w-[8vw] shrink-0" />
               </div>
-              <div className="p-4 md:p-6 shrink-0 bg-base-100 flex flex-col gap-4 rounded-t-[32px] relative -mt-4">
-                <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-base-200 border border-base-content/5 cursor-pointer" onClick={() => setMediaPreview({ ...mediaPreview, viewOnce: !mediaPreview.viewOnce })}>
+              <div className="p-4 md:p-6 shrink-0 bg-base-100 flex flex-col gap-3 rounded-t-[32px] relative z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] border-t border-base-content/5">
+                <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-base-200 border border-base-content/5 cursor-pointer" onClick={() => setMediaPreviews(prev => { const val = !prev.some(p => p.viewOnce); return prev.map(p => ({ ...p, viewOnce: val })); })}>
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-xl transition-colors ${mediaPreview.viewOnce ? "bg-warning/20 text-warning" : "bg-base-content/5 text-base-content/40"}`}>
-                      {mediaPreview.viewOnce ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <div className={`p-2 rounded-xl transition-colors ${mediaPreviews.some(p => p.viewOnce) ? "bg-warning/20 text-warning" : "bg-base-content/5 text-base-content/40"}`}>
+                      {mediaPreviews.some(p => p.viewOnce) ? <EyeOff size={16} /> : <Eye size={16} />}
                     </div>
                     <div>
                       <p className="text-xs font-bold text-base-content mb-0.5">View Once</p>
-                      <p className="text-[10px] text-base-content/50 font-medium">{mediaPreview.viewOnce ? "Media vanishes after opening" : "Standard permanent view"}</p>
+                      <p className="text-[10px] text-base-content/50 font-medium">{mediaPreviews.some(p => p.viewOnce) ? "Media vanishes after opening" : "Standard permanent view"}</p>
                     </div>
                   </div>
-                  <input type="checkbox" className="toggle toggle-primary toggle-sm scale-90" checked={mediaPreview.viewOnce} readOnly />
+                  <input type="checkbox" className="toggle toggle-primary toggle-sm scale-90" checked={mediaPreviews.some(p => p.viewOnce)} readOnly />
                 </div>
                 <button onClick={handleSendMedia} disabled={isUploading} className="btn bg-[#1D4ED8] hover:bg-[#1e40af] disabled:bg-[#1D4ED8]/50 disabled:text-white/50 text-white w-full h-12 rounded-2xl font-bold text-[14px] shadow-lg shadow-[#1D4ED8]/20 border-none flex items-center justify-center gap-2">
                   {isUploading ? <span className="loading loading-spinner loading-sm" /> : <>Send to Stranger <Send size={16} /></>}
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {fullscreenMedia && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-2xl flex flex-col items-center justify-center p-0 md:p-8" onClick={() => setFullscreenMedia(null)}>
+            {/* Header controls */}
+            <div className="absolute top-6 inset-x-4 md:inset-x-8 z-[110] flex items-center justify-between pointer-events-none">
+              <div className="pointer-events-auto">
+                {fullscreenMedia.items.length > 1 && (
+                  <span className="text-white text-sm font-bold bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-md shadow-2xl border border-white/20">
+                    {fullscreenMedia.index + 1} / {fullscreenMedia.items.length}
+                  </span>
+                )}
+              </div>
+              <button className="text-white p-3 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md shadow-2xl border border-white/20 transition-all pointer-events-auto" onClick={(e) => { e.stopPropagation(); setFullscreenMedia(null); }}><X size={24} /></button>
+            </div>
+
+            {/* Main Media */}
+            <div className="w-full h-full flex items-center justify-center relative touch-pan-x p-4 py-20 pb-24 md:p-12">
+              {fullscreenMedia.items[fullscreenMedia.index].type === "IMAGE" || fullscreenMedia.items[fullscreenMedia.index].type === "STICKER" ? (
+                <img src={fullscreenMedia.items[fullscreenMedia.index].url} className="max-w-full max-h-full object-contain rounded-[24px] shadow-2xl" onClick={e => e.stopPropagation()} />
+              ) : (
+                <video src={fullscreenMedia.items[fullscreenMedia.index].url} controls className="max-w-full max-h-full object-contain rounded-[24px] shadow-2xl bg-black/50" onClick={e => e.stopPropagation()} />
+              )}
+            </div>
+
+            {/* Carousel Buttons */}
+            {fullscreenMedia.index > 0 && (
+              <button onClick={(e) => { e.stopPropagation(); setFullscreenMedia(prev => ({ ...prev!, index: prev!.index - 1 })) }} className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 p-3 md:p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md shadow-2xl border border-white/20 transition-all z-[110]">
+                <ChevronLeft size={32} />
+              </button>
+            )}
+            
+            {fullscreenMedia.index < fullscreenMedia.items.length - 1 && (
+              <button onClick={(e) => { e.stopPropagation(); setFullscreenMedia(prev => ({ ...prev!, index: prev!.index + 1 })) }} className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 p-3 md:p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md shadow-2xl border border-white/20 transition-all z-[110]">
+                <ChevronRight size={32} />
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -516,49 +557,37 @@ function ErrorScreen({ error, onRetry }: { error: string | null; onRetry: () => 
   );
 }
 
-function MessageArea({ messages, myId, partnerTyping, bottomRef, onReply }: { messages: ChatMessageDto[]; myId: string; partnerTyping: boolean; bottomRef: React.RefObject<HTMLDivElement | null>; onReply: (r: { messageId: string; senderId: string; content?: string; messageType: MessageType }) => void }) {
-  const hasSentMessage = messages.some(m => m.senderId === myId);
+function MessageArea({ messages, myId, partnerTyping, bottomRef, onReply, onMediaClick }: { messages: ChatMessageDto[]; myId: string; partnerTyping: boolean; bottomRef: React.RefObject<HTMLDivElement | null>; onReply: (r: { messageId: string; senderId: string; content?: string; messageType: MessageType }) => void; onMediaClick: (items: {url: string, type: MessageType}[], index: number) => void }) {
+  // Chunk consecutive media messages sent within 60s
+  const groupedMessages = useMemo(() => {
+    const groups: ChatMessageDto[][] = [];
+    let current: ChatMessageDto[] = [];
+    
+    for (const msg of messages) {
+      if (current.length === 0) {
+        current.push(msg);
+        continue;
+      }
+      const prev = current[current.length - 1];
+      const isMedia = (m: ChatMessageDto) => m.messageType === "IMAGE" || m.messageType === "VIDEO";
+      const timeDiff = new Date(msg.timestamp).getTime() - new Date(prev.timestamp).getTime();
+      
+      if (prev.senderId === msg.senderId && isMedia(prev) && isMedia(msg) && !msg.viewOnce && !prev.viewOnce && !msg.replyToId && timeDiff < 60000) {
+        current.push(msg);
+      } else {
+        groups.push(current);
+        current = [msg];
+      }
+    }
+    if (current.length > 0) groups.push(current);
+    return groups;
+  }, [messages]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-2 md:p-4 custom-scrollbar scroll-smooth flex flex-col gap-2 relative">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 md:p-4 scrollbar-hide scroll-smooth flex flex-col gap-2 relative">
       <div className="mb-auto" />
 
-      <AnimatePresence>
-        {!hasSentMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="flex flex-col items-center gap-4 md:gap-6 p-4 md:p-8 mb-4 md:mb-8 bg-base-300/20 rounded-[32px] border border-base-content/5 backdrop-blur-md text-center max-w-sm mx-auto"
-          >
-            <div className="space-y-2">
-              <h3 className="text-sm font-black uppercase tracking-[0.3em] text-[#1D4ED8]">Chat Controls</h3>
-              <p className="text-[10px] text-base-content/30 font-bold uppercase tracking-widest leading-relaxed">
-                Before you start, here's how to manage your session:
-              </p>
-            </div>
-
-            <div className="grid gap-2 md:gap-4 w-full">
-              {[
-                { icon: <Zap size={14} />, label: "Next Match", desc: "Instantly find a new stranger" },
-                { icon: <Trash2 size={14} />, label: "Clear Chat", desc: "Wipe local messages" },
-                { icon: <LogOut size={14} />, label: "Leave", desc: "Exit current conversation" }
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 md:gap-4 text-left p-2 md:p-3 rounded-xl md:rounded-2xl bg-base-100/40 border border-base-content/5">
-                  <div className="p-2 rounded-lg md:rounded-xl bg-[#1D4ED8]/10 text-[#1D4ED8]">{item.icon}</div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-base-content/60">{item.label}</p>
-                    <p className="text-[9px] text-base-content/30 font-bold uppercase tracking-wider mt-0.5">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-[9px] text-base-content/20 font-black uppercase tracking-[0.4em] animate-pulse">Waiting for your first message...</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {messages.map((msg, i) => <Bubble key={msg.messageId ?? i} msg={msg} isMine={msg.senderId === myId} allMessages={messages} onReply={onReply} />)}
+      {groupedMessages.map((group, i) => <Bubble key={group[0].messageId ?? i} msgGroup={group} isMine={group[0].senderId === myId} allMessages={messages} onReply={onReply} onMediaClick={onMediaClick} />)}
       {partnerTyping && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start px-2 py-2">
           <div className="flex items-center gap-3 px-4 py-3 rounded-[24px] bg-base-300/80 backdrop-blur-md border border-base-content/5 shadow-sm">
@@ -576,23 +605,22 @@ function MessageArea({ messages, myId, partnerTyping, bottomRef, onReply }: { me
   );
 }
 
-function Bubble({ msg, isMine, allMessages, onReply }: { msg: ChatMessageDto; isMine: boolean; allMessages: ChatMessageDto[]; onReply: (r: { messageId: string; senderId: string; content?: string; messageType: MessageType }) => void }) {
+function Bubble({ msgGroup, isMine, allMessages, onReply, onMediaClick }: { msgGroup: ChatMessageDto[]; isMine: boolean; allMessages: ChatMessageDto[]; onReply: (r: { messageId: string; senderId: string; content?: string; messageType: MessageType }) => void; onMediaClick: (items: {url: string, type: MessageType}[], index: number) => void }) {
   const [hovered, setHovered] = useState(false);
   const [showViewOnce, setShowViewOnce] = useState(false);
 
-  const dragX = useMotionValue(0);
-  const replyIconScale = useTransform(dragX, [0, 50, 80], [0, 0.8, 1.2]);
-  const replyIconOpacity = useTransform(dragX, [0, 50, 80], [0, 0.5, 1]);
-
-  const isSystem = msg.senderId === "SYSTEM" || msg.messageType === "SYSTEM" || msg.messageType === "USER_LEFT" || msg.messageType === "CHAT_ENDED" || msg.messageType === "USER_JOINED";
-  if (isSystem) return <div className="w-full flex justify-center py-4 px-4 my-2"><div className="px-4 py-2 rounded-2xl bg-base-content/5 border border-base-content/10"><p className="text-[10px] text-base-content/50 uppercase tracking-[0.2em] font-black text-center leading-none">{msg.content}</p></div></div>;
-
+  // We operate heavily on the last message for metadata (time, status)
+  const msg = msgGroup[msgGroup.length - 1];
+  
   const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
   const repliedMsg = msg.replyToId ? allMessages.find(m => m.messageId === msg.replyToId || (m.messageId.startsWith('local-') && m.messageId === msg.replyToId)) : null;
   const truncate = (s: string, max = 50) => s.length > max ? s.slice(0, max) + "..." : s;
-  const isMedia = msg.messageType === "IMAGE" || msg.messageType === "VIDEO" || msg.messageType === "STICKER";
+  
+  // Single media detection
+  const isSingleMedia = msgGroup.length === 1 && (msg.messageType === "IMAGE" || msg.messageType === "VIDEO" || msg.messageType === "STICKER");
+  const isMultiMedia = msgGroup.length > 1;
 
-  const renderMedia = () => {
+  const renderSingleMedia = () => {
     if (msg.messageType === "STICKER") {
       return (
         <div className="relative">
@@ -602,43 +630,38 @@ function Bubble({ msg, isMine, allMessages, onReply }: { msg: ChatMessageDto; is
     }
     if (msg.viewOnce && !showViewOnce) return <div onClick={() => setShowViewOnce(true)} className="relative w-72 aspect-video rounded-3xl bg-[#1D4ED8]/10 backdrop-blur-3xl flex flex-col items-center justify-center gap-4 cursor-pointer group/vo border border-[#1D4ED8]/20 hover:bg-[#1D4ED8]/20 transition-colors"><div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-[#1D4ED8] shadow-2xl transition-transform group-hover/vo:scale-110"><EyeOff size={32} /></div><p className="text-[10px] font-black text-[#1D4ED8] uppercase tracking-[0.4em]">Unlock Private Media</p></div>;
     return <div className={`relative overflow-hidden rounded-[14px] bg-base-100 flex items-center justify-center ${isMine ? "bg-transparent ring-0 shadow-none border-0" : "shadow-sm ring-1 ring-base-content/5 bg-black/5"}`}>
-      {msg.messageType === "IMAGE" ? <img src={msg.mediaPayload} className={`max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto object-cover cursor-pointer ${isMine ? "rounded-[14px]" : ""}`} onClick={() => window.open(msg.mediaPayload, "_blank")} alt="" /> : <video src={msg.mediaPayload} controls className="max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto" onEnded={() => msg.viewOnce && setShowViewOnce(false)} />}
+      {msg.messageType === "IMAGE" ? <img src={msg.mediaPayload} className={`max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto object-cover cursor-pointer ${isMine ? "rounded-[14px]" : ""}`} onClick={() => onMediaClick([{url: msg.mediaPayload!, type: msg.messageType}], 0)} alt="" /> : <video src={msg.mediaPayload} controls className="max-w-full max-h-[150px] md:max-h-[200px] w-auto h-auto" onEnded={() => msg.viewOnce && setShowViewOnce(false)} />}
       {msg.viewOnce && <div className="absolute top-2 right-2 px-2 py-1 bg-[#1D4ED8] backdrop-blur-md rounded-lg text-[9px] font-black text-white uppercase flex items-center gap-1 shadow-lg shrink-0"><EyeOff size={11} /> View Once</div>}
     </div>;
   };
 
-  const handleDragEnd = (_: any, info: any) => {
-    const threshold = isMine ? -60 : 60;
-    if ((!isMine && info.offset.x > threshold) || (isMine && info.offset.x < threshold)) {
-      onReply({ messageId: msg.messageId, senderId: msg.senderId, content: msg.content, messageType: msg.messageType });
-    }
+  const renderMultiMedia = () => {
+    return (
+      <div className="flex gap-1 overflow-x-auto snap-x max-w-[260px] md:max-w-[320px] custom-scrollbar pb-1 rounded-[14px]">
+        {msgGroup.map((m, idx) => (
+          <div key={m.messageId} className="shrink-0 w-[140px] md:w-[160px] snap-center rounded-[10px] overflow-hidden bg-black/5 relative aspect-square">
+            {m.messageType === "IMAGE" ? (
+              <img src={m.mediaPayload} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onMediaClick(msgGroup.map(g => ({url: g.mediaPayload!, type: g.messageType})), idx)} alt="" />
+            ) : (
+              <video src={m.mediaPayload} controls className="w-full h-full object-cover" />
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
-    <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`relative flex flex-col ${isMine ? "items-end" : "items-start"} group px-1 mb-1`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+    <div className={`relative flex flex-col ${isMine ? "items-end" : "items-start"} group px-1 mb-1`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
 
-      {/* Swipe Background Indicator */}
-      <motion.div
-        style={{ scale: replyIconScale, opacity: replyIconOpacity }}
-        className={`absolute top-1/2 -translate-y-1/2 p-2 text-[#1D4ED8]/40 pointer-events-none ${isMine ? "right-2" : "left-2"}`}
-      >
-        <IconReply />
-      </motion.div>
-
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: isMine ? -100 : 0, right: isMine ? 0 : 100 }}
-        dragElastic={0.2}
-        style={{ x: dragX }}
-        onDragEnd={handleDragEnd}
-        onClick={() => onReply({ messageId: msg.messageId, senderId: msg.senderId, content: msg.content, messageType: msg.messageType })}
-        className={`max-w-[80%] md:max-w-[65%] rounded-2xl overflow-hidden cursor-pointer select-none relative z-10 transition-shadow 
+      <div
+        className={`max-w-[80%] md:max-w-[65%] rounded-2xl overflow-hidden relative z-10 transition-shadow 
           ${msg.messageType === "STICKER"
             ? "bg-transparent shadow-none"
             : isMine
               ? "bg-[#1D4ED8] text-white shadow-sm"
-              : "bg-base-content/5 backdrop-blur-xl text-base-content border border-base-content/5 shadow-sm"
-          } ${isMedia ? "p-0 bg-transparent border-none shadow-none" : "px-3.5 py-2"}`}
+              : "bg-base-100 text-base-content border border-base-200 shadow-sm"
+          } ${isSingleMedia || isMultiMedia ? "p-0 bg-transparent border-none shadow-none" : "px-3.5 py-1.5"}`}
       >
         {repliedMsg && (
           <div className={`mb-2 pl-2 border-l-2 transition-colors ${isMine ? "border-white/40 bg-white/5" : "border-[#1D4ED8]/60 bg-[#1D4ED8]/5"
@@ -652,12 +675,13 @@ function Bubble({ msg, isMine, allMessages, onReply }: { msg: ChatMessageDto; is
           </div>
         )}
 
-        {isMedia ? renderMedia() : <p className="text-[13px] whitespace-pre-wrap break-words leading-[1.4] font-medium tracking-tight px-0.5">{msg.content}</p>}
-
-        <div className={`flex items-center gap-2 mt-1 ${isMine ? "justify-end text-white/40" : "justify-start text-base-content/20"}`}>
-          <span className="text-[8px] font-bold uppercase tracking-widest">{time}</span>
-        </div>
-      </motion.div>
+        {isMultiMedia ? renderMultiMedia() : isSingleMedia ? renderSingleMedia() : (
+          <div className="flex items-end justify-between gap-3 min-w-[50px] relative">
+            <p className="text-[13px] whitespace-pre-wrap break-words leading-[1.4] font-medium tracking-tight flex-1 text-left py-0.5">{msg.content}</p>
+            <span className={`shrink-0 text-[8px] font-bold uppercase tracking-widest translate-y-[-2px] ${isMine ? "text-white/60" : "text-base-content/40"}`}>{time}</span>
+          </div>
+        )}
+      </div>
 
       <AnimatePresence>
         {hovered && (
@@ -672,6 +696,6 @@ function Bubble({ msg, isMine, allMessages, onReply }: { msg: ChatMessageDto; is
           </motion.button>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
