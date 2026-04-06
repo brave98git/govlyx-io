@@ -22,7 +22,6 @@ import {
   Play,
   Volume2,
   VolumeX,
-  ArrowUp,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CommentSection from "./CommentSection";
