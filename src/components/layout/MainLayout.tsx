@@ -30,19 +30,19 @@ const MainLayout = () => {
 
                 {/* LEFT SIDEBAR */}
                 <aside className="hidden lg:block lg:col-span-3 h-full">
-                  <div className="h-full overflow-y-auto">
+                  <div className="h-full overflow-y-auto scrollbar-hide">
                     <SidebarLeft />
                   </div>
                 </aside>
 
                 {/* CENTER */}
-                <main className="col-span-12 lg:col-span-9 xl:col-span-6 h-full overflow-y-auto">
+                <main className="col-span-12 lg:col-span-9 xl:col-span-6 h-full overflow-y-auto scrollbar-hide">
                   <Outlet />
                 </main>
                 
                 {/* RIGHT SIDEBAR */}
                 <aside className="hidden xl:block xl:col-span-3 h-full">
-                  <div className="h-full overflow-y-auto">
+                  <div className="h-full overflow-y-auto scrollbar-hide">
                     <SidebarRight />
                   </div>
                 </aside>
@@ -69,7 +69,7 @@ const MainLayout = () => {
             </label>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto hide-scrollbar scrollbar-hide">
             <SidebarLeft />
           </div>
         </div>

@@ -1143,8 +1143,8 @@ export default function PostCard({
             )}
 
           {/* Conditional Body Layout */}
-          <div className={hasMedia ? "flex gap-4 items-start" : "flex flex-col gap-4"}>
-            <div className="flex-1 min-w-0 flex flex-col gap-4">
+          <div className={hasMedia ? "flex flex-col lg:flex-row gap-4 items-start" : "flex flex-col gap-4"}>
+            <div className="flex-1 min-w-0 flex flex-col gap-4 w-full lg:order-1">
               {hasMedia && (
                 <div className="-mx-1">
                   <ModernMediaCarousel mediaUrls={allMediaUrls} onExpand={() => setLightboxOpen(true)} />
@@ -1161,35 +1161,9 @@ export default function PostCard({
                   <CheckCircle2 size={14} /> Issue resolved
                 </div>
               )}
-            </div>
 
-            {/* Action Bar: Vertical Sidebar (if media) or Horizontal Bar (if no media) */}
-            {hasMedia ? (
-              <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-2 p-1 rounded-2xl bg-base-200/50 border border-base-300">
-                <ActionPill onClick={handleLike} active={liked} disabled={isResolved} vertical activeClass="border-pink-500 text-pink-500 bg-transparent">
-                  <Heart size={18} className={liked ? "fill-current" : ""} />
-                  <span>{likeCount || "0"}</span>
-                </ActionPill>
-                <ActionPill onClick={() => setCommentsOpen(!commentsOpen)} active={commentsOpen} vertical activeClass="border-sky-500 text-sky-500 bg-transparent">
-                  <MessageSquare size={18} className={commentsOpen ? "fill-current" : ""} />
-                  <span>{post.commentCount ?? 0}</span>
-                </ActionPill>
-                <ActionPill onClick={handleShare} active={copied} vertical activeClass="border-emerald-500 text-emerald-500 bg-transparent">
-                  <Share2 size={18} />
-                  <span className="text-[9px] leading-tight mt-0.5">{copied ? "Copied" : (shareCount || "0")}</span>
-                </ActionPill>
-                <ActionPill onClick={handleSave} active={saved} vertical activeClass="border-amber-500 text-amber-500 bg-transparent">
-                  <Bookmark size={18} className={saved ? "fill-current" : ""} />
-                </ActionPill>
-                {isIssue && (
-                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved} vertical activeClass="border-rose-500 text-rose-500 bg-transparent">
-                    <ThumbsDown size={18} className={disliked ? "fill-current" : ""} />
-                    <span>{dislikeCount || "0"}</span>
-                  </ActionPill>
-                )}
-              </motion.div>
-            ) : (
-              <div className="flex items-center gap-2 border-t border-base-300 pt-3">
+              {/* Horizontal Action Bar: Shown for all posts on mobile, and on desktop if NO media */}
+              <div className={`flex items-center gap-2 border-t border-base-300 pt-3 ${hasMedia ? "lg:hidden" : "flex"}`}>
                 <ActionPill onClick={handleLike} active={liked} disabled={isResolved} activeClass="border-pink-500 text-pink-500 bg-transparent">
                   <Heart size={16} className={liked ? "fill-current" : ""} />
                   <span>{likeCount || "0"}</span>
@@ -1212,6 +1186,37 @@ export default function PostCard({
                   </ActionPill>
                 )}
               </div>
+            </div>
+
+            {/* Desktop Sidebar: Visible only when media exists and on lg: screens */}
+            {hasMedia && (
+              <motion.div
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="hidden lg:flex flex-col gap-2 p-1 rounded-2xl bg-base-200/50 border border-base-300 lg:order-2 shrink-0 sticky top-0"
+              >
+                <ActionPill onClick={handleLike} active={liked} disabled={isResolved} vertical activeClass="border-pink-500 text-pink-500 bg-transparent">
+                  <Heart size={18} className={liked ? "fill-current" : ""} />
+                  <span>{likeCount || "0"}</span>
+                </ActionPill>
+                <ActionPill onClick={() => setCommentsOpen(!commentsOpen)} active={commentsOpen} vertical activeClass="border-sky-500 text-sky-500 bg-transparent">
+                  <MessageSquare size={18} className={commentsOpen ? "fill-current" : ""} />
+                  <span>{post.commentCount ?? 0}</span>
+                </ActionPill>
+                <ActionPill onClick={handleShare} active={copied} vertical activeClass="border-emerald-500 text-emerald-500 bg-transparent">
+                  <Share2 size={18} />
+                  <span className="text-[9px] leading-tight mt-0.5">{copied ? "Copied" : (shareCount || "0")}</span>
+                </ActionPill>
+                <ActionPill onClick={handleSave} active={saved} vertical activeClass="border-amber-500 text-amber-500 bg-transparent">
+                  <Bookmark size={18} className={saved ? "fill-current" : ""} />
+                </ActionPill>
+                {isIssue && (
+                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved} vertical activeClass="border-rose-500 text-rose-500 bg-transparent">
+                    <ThumbsDown size={18} className={disliked ? "fill-current" : ""} />
+                    <span>{dislikeCount || "0"}</span>
+                  </ActionPill>
+                )}
+              </motion.div>
             )}
           </div>
 

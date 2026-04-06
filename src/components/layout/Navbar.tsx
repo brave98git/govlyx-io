@@ -7,11 +7,12 @@
  *  - SearchOverlay imported from ../search/SearchOverlay
  */
 
+import { useState, useCallback } from "react";
 import { NavLink } from "react-router-dom";
 import { Search, MessageCircle, Plus, Menu } from "lucide-react";
 import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useTheme } from "../../hooks/useTheme";
 
 import CreatePost from "../ui/CreatePost";
 import SearchOverlay from "../search/SearchOverlay";
@@ -21,7 +22,7 @@ import { useUnreadNotificationsCount } from "../../hooks/useNotification";
 
 const Navbar = () => {
   const [openCreate, setOpenCreate] = useState(false);
-  const [theme, setTheme] = useState("light");
+  const { theme, toggleTheme } = useTheme();
   
   const { data: user } = useCurrentUser();
   const { data: unreadNotifications = 0, refetch: refetchUnreadCount } = useUnreadNotificationsCount();
@@ -43,19 +44,7 @@ const Navbar = () => {
     setSearchSeed("");
   }, []);
 
-  // ── Theme ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || "light";
-    setTheme(savedTheme);
-    document.documentElement.setAttribute("data-theme", savedTheme);
-  }, []);
 
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
-  };
 
   // (Effect for unread count is now handled by useUnreadNotificationsCount hook)
 
@@ -183,7 +172,7 @@ const Navbar = () => {
             {/* THEME TOGGLE */}
             <button
               onClick={toggleTheme}
-              className="btn btn-ghost btn-sm hover:bg-blue-700/10"
+              className="btn btn-ghost btn-sm hover:bg-blue-700/10 hidden lg:inline-flex"
               aria-label="Toggle theme"
             >
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}

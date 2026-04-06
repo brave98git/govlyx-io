@@ -137,6 +137,7 @@ async function apiCreatePoll(payload: {
   expiresIn: string;
   allowMultipleVotes: boolean;
   showResultsBeforeExpiry?: boolean;
+  communityId?: number;
 }): Promise<ApiResult> {
   const res = await fetch(`/api/polls/create`, {
     method: "POST",
@@ -828,8 +829,8 @@ function PollForm({
               />
             </div>
             {options.length > 2 && (
-              <button 
-                className="btn btn-ghost btn-xs w-8 h-8 rounded-full text-base-content/30 hover:text-red-400 hover:bg-red-400/10 transition-all flex-shrink-0" 
+              <button
+                className="btn btn-ghost btn-xs w-8 h-8 rounded-full text-base-content/30 hover:text-red-400 hover:bg-red-400/10 transition-all flex-shrink-0"
                 onClick={() => removeOption(i)}
                 title="Remove option"
               >
@@ -881,9 +882,9 @@ function PollForm({
       </div>
 
       <div className="flex justify-end pt-2">
-        <button 
-          className="btn btn-sm bg-[#1D4ED8] text-white min-w-[120px] rounded-xl font-bold shadow-lg shadow-[#1D4ED8]/20 hover:bg-[#1D4ED8]/90 h-10 border-none" 
-          onClick={handlePost} 
+        <button
+          className="btn btn-sm bg-[#1D4ED8] text-white min-w-[120px] rounded-xl font-bold shadow-lg shadow-[#1D4ED8]/20 hover:bg-[#1D4ED8]/90 h-10 border-none"
+          onClick={handlePost}
           disabled={loading}
         >
           {loading ? <><Loader2 size={14} className="animate-spin" /> Publishing...</> : "Publish Poll"}

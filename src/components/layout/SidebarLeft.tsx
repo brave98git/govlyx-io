@@ -7,7 +7,10 @@ import {
   Settings,
   LayoutDashboard,
   Bell,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useTheme } from "../../hooks/useTheme";
 import { useCurrentUser } from "../../hooks/useUser";
 import { useUnreadNotificationsCount } from "../../hooks/useNotification";
 
@@ -28,6 +31,7 @@ const DEPT_NAV_ITEM = { label: "Dept. Dashboard", icon: LayoutDashboard, to: "/d
 const SidebarLeft = () => {
   const { data: user, isLoading: loading } = useCurrentUser();
   const { data: unreadCount } = useUnreadNotificationsCount();
+  const { theme, toggleTheme } = useTheme();
 
   // Simple check for role since useCurrentUser returns the full profile
   const isDept = user?.role === "ROLE_DEPARTMENT";
@@ -51,8 +55,8 @@ const SidebarLeft = () => {
               <img src={`https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(displayName)}`} alt="Avatar" className="w-full h-full object-cover" />
             </div>
           </div>
-          <div>
-            <p className="font-semibold">{displayName}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate" title={displayName}>{displayName}</p>
           </div>
         </div>
       </div>
@@ -85,6 +89,25 @@ const SidebarLeft = () => {
           );
         })}
       </nav>
+
+      {/* Mobile Theme Toggle */}
+      <div className="lg:hidden mt-auto pt-4">
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl bg-base-300/30 hover:bg-base-300 transition-colors duration-200"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-base-100 shadow-sm">
+            {theme === "light" ? <Moon size={18} className="text-blue-600" /> : <Sun size={18} className="text-yellow-500" />}
+          </div>
+          <div className="flex-1 text-left min-w-0">
+            <p className="text-sm font-bold truncate">{theme === "light" ? "Dark Mode" : "Light Mode"}</p>
+            <p className="text-[10px] opacity-40 uppercase font-bold tracking-wider truncate">Switch Theme</p>
+          </div>
+          <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${theme === "dark" ? "bg-blue-600" : "bg-base-content/20"}`}>
+            <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-300 ${theme === "dark" ? "translate-x-4.5" : "translate-x-0.5"}`} />
+          </div>
+        </button>
+      </div>
 
       {/* Communities Placeholder */}
       <div className="rounded-xl bg-base-200 p-4">

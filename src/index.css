@@ -2,9 +2,9 @@
 @plugin "daisyui";
 
 @font-face {
-  font-family: 'Supreme';
-  src: url('/supreme/fonts/Supreme-Variable.ttf') format('truetype');
-  font-weight: 100 800;
+  font-family: 'Satoshi';
+  src: url('./fonts/Satoshi-Variable.ttf') format('truetype');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
@@ -13,7 +13,17 @@
   --color-primary: #1D4ED8;
   --color-primary-focus: #1e40af;
   --color-primary-content: #ffffff;
-  --font-sans: 'Supreme', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-sans: 'Satoshi', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer utilities {
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
 }
 
 html,
@@ -21,7 +31,8 @@ body,
 #root {
   height: 100%;
   overflow: hidden;
-  font-weight: 500;
+  font-family: var(--font-sans);
+  font-weight: 700;
 }
 
 .scrollbar-hide {
@@ -33,10 +44,12 @@ body,
   display: none; /* Chrome, Safari and Opera */
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar and global font */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--p) transparent;
+  font-family: var(--font-sans);
+  font-weight: 700;
 }
 
 *::-webkit-scrollbar {
