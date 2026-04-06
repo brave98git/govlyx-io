@@ -1,6 +1,6 @@
 // src/components/layout/StrangerChat.tsx
 import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from "react";
-import { Dices, Zap, Search, AlertTriangle, Plus, Image as ImageIcon, Video, X, Eye, EyeOff, Send, ArrowLeft, Trash2, LogOut } from "lucide-react";
+import { Dices, Zap, Search, AlertTriangle, Plus, Image as ImageIcon, Video, X, Eye, EyeOff, Send, Trash2, LogOut } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { useChat } from "../../hooks/useChat";
 import { sendMedia } from "../../api/chatApi.service";
@@ -60,6 +60,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
   const [draft, setDraft] = useState("");
   const [replyTo, setReplyTo] = useState<ReplyTo | null>(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showStickerMenu, setShowStickerMenu] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<MediaPreview | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -139,6 +140,35 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
     }
   };
 
+  const handleSendSticker = async (stickerUrl: string) => {
+    if (!chat.session) return;
+    try {
+      // Fetch the sticker to convert to base64, or just send URL
+      // If backend expects base64 payload for media:
+      const response = await fetch(stickerUrl);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+      });
+      reader.readAsDataURL(blob);
+      const base64 = await base64Promise;
+      
+      await sendMedia(chat.session.sessionId, {
+        type: "STICKER",
+        mediaPayload: base64,
+        mimeType: blob.type,
+        mediaName: "sticker",
+        viewOnce: false,
+        replyToId: replyTo?.messageId
+      });
+      setShowStickerMenu(false);
+      setReplyTo(null);
+    } catch (err) {
+      console.error("Failed to send sticker", err);
+    }
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -149,6 +179,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       setReplyTo(null);
       setMediaPreview(null);
       setShowAttachMenu(false);
+      setShowStickerMenu(false);
     }
   };
 
@@ -264,38 +295,73 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
             </AnimatePresence>
 
             {chat.status === "CONNECTED" ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-end gap-2 bg-base-300/50 p-2 rounded-[28px] border border-base-content/10 shadow-inner focus-within:border-[#1D4ED8]/50 transition-colors">
-                  <div className="relative group/attach">
-                    <button onClick={() => setShowAttachMenu(!showAttachMenu)} className={`btn btn-circle btn-sm h-10 w-10 md:h-11 md:w-11 ${showAttachMenu ? "bg-[#1D4ED8] text-white border-none hover:bg-[#1D4ED8]/90" : "btn-ghost bg-base-100/50"}`}>
-                      <Plus className={`transition-transform duration-300 ${showAttachMenu ? "rotate-45" : ""}`} size={20} />
+              <div className="flex flex-col gap-2 relative z-50">
+                <div className="flex items-end gap-2 w-full">
+                  {/* WhatsApp style chat bar */}
+                  <div className="flex-1 flex items-end bg-base-100 rounded-3xl min-h-[48px] shadow-sm border border-base-content/10 px-1 py-1 relative">
+                    <button onClick={() => { setShowStickerMenu(!showStickerMenu); setShowAttachMenu(false); }} className={`btn btn-ghost btn-circle btn-sm shrink-0 mb-[2px] transition-colors ${showStickerMenu ? "text-[#1D4ED8]" : "text-base-content/50 hover:text-base-content"}`}>
+                      <Zap size={22} /> {/* We use Zap or Smile for stickers */}
                     </button>
+
                     <AnimatePresence>
-                      {showAttachMenu && (
-                        <motion.div initial={{ opacity: 0, scale: 0.9, y: -20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: -20 }} className="absolute bottom-full left-0 mb-4 flex flex-col gap-1 min-w-[200px] p-2 rounded-2xl bg-base-200 border border-base-content/10 shadow-2xl z-50">
-                          <button onClick={() => handleFileSelect("IMAGE")} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-300 text-base-content transition-colors">
-                            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500"><ImageIcon size={18} /></div>
-                            <span className="text-sm font-semibold">Send Image</span>
-                          </button>
-                          <button onClick={() => handleFileSelect("VIDEO")} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-300 text-base-content transition-colors">
-                            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500"><Video size={18} /></div>
-                            <span className="text-sm font-semibold">Send Video</span>
-                          </button>
+                      {showStickerMenu && (
+                        <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="absolute bottom-full left-0 mb-4 w-64 bg-base-200 border border-base-content/10 shadow-2xl rounded-2xl p-3 z-50">
+                          <p className="text-xs font-bold text-base-content/50 mb-2 uppercase tracking-widest px-1">Stickers</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {/* Simple predefined sticker list (Twemoji URLs) */}
+                            {[
+                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f602.svg", // 😂
+                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/2764.svg", // ❤️
+                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f525.svg", // 🔥
+                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f44d.svg", // 👍
+                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f62d.svg", // 😭
+                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f64f.svg", // 🙏
+                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f4a5.svg", // 💥
+                              "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f973.svg"  // 🥳
+                            ].map((url, i) => (
+                              <button key={i} onClick={() => handleSendSticker(url)} className="p-2 hover:bg-base-300 rounded-lg transition-colors aspect-square flex items-center justify-center">
+                                <img src={url} alt="Sticker" className="w-full h-full object-contain drop-shadow-md" />
+                              </button>
+                            ))}
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
+
+                    <textarea
+                      ref={inputRef}
+                      rows={1}
+                      value={draft}
+                      onChange={(e) => { setDraft(e.target.value); chat.notifyTyping(); }}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Message"
+                      className="flex-1 bg-transparent border-none text-base-content focus:ring-0 placeholder-base-content/40 resize-none py-[10px] px-2 text-[15px] max-h-32 min-h-[20px] leading-relaxed"
+                    />
+
+                    <div className="relative group/attach flex items-end shrink-0 mb-[2px] right-1">
+                      <button onClick={() => { setShowAttachMenu(!showAttachMenu); setShowStickerMenu(false); }} className={`btn btn-ghost btn-circle btn-sm transition-transform duration-300 ${showAttachMenu ? "rotate-45 text-[#1D4ED8]" : "text-base-content/50 hover:text-base-content"}`}>
+                        <Plus size={22} />
+                      </button>
+                      <AnimatePresence>
+                        {showAttachMenu && (
+                          <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="absolute bottom-full right-0 mb-4 flex flex-col gap-1 min-w-[200px] p-2 rounded-2xl bg-base-200 border border-base-content/10 shadow-2xl z-50 origin-bottom-right">
+                            <button onClick={() => handleFileSelect("IMAGE")} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-300 text-base-content transition-colors">
+                              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500"><ImageIcon size={18} /></div>
+                              <span className="text-sm font-semibold">Photo</span>
+                            </button>
+                            <button onClick={() => handleFileSelect("VIDEO")} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-300 text-base-content transition-colors">
+                              <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500"><Video size={18} /></div>
+                              <span className="text-sm font-semibold">Video</span>
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
-                  <textarea
-                    ref={inputRef}
-                    rows={1}
-                    value={draft}
-                    onChange={(e) => { setDraft(e.target.value); chat.notifyTyping(); }}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Type a message..."
-                    className="flex-1 bg-transparent border-none text-base-content focus:ring-0 placeholder-base-content/30 resize-none py-2 md:py-3 px-2 text-sm max-h-32 min-h-[20px]"
-                  />
-                  <button onClick={handleSend} disabled={!draft.trim()} className="btn bg-[#1D4ED8] hover:bg-[#1D4ED8]/90 text-white btn-circle h-10 w-10 md:h-11 md:w-11 shadow-lg shadow-[#1D4ED8]/20 border-none">
-                    <Send size={18} />
+                  
+                  {/* Primary Action Button (Send) */}
+                  <button onClick={handleSend} disabled={!draft.trim()} className="btn bg-[#00a884] hover:bg-[#128C7E] disabled:bg-[#00a884]/50 disabled:text-white/50 text-white btn-circle shrink-0 h-[48px] w-[48px] shadow-lg shadow-[#00a884]/20 border-none transition-all duration-200 flex items-center justify-center">
+                    <Send size={20} className="ml-1" />
                   </button>
                 </div>
                 <div className="flex items-center justify-between px-1 md:px-2 mt-2 md:mt-4">
@@ -328,39 +394,45 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
         )}
       </footer>
 
-      {/* ── Media Preview Modal ── */}
+      {/* ── Media Preview Sheet ── */}
       <AnimatePresence>
         {mediaPreview && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-[100] bg-base-100 h-full w-full flex flex-col">
-            <div className="flex items-center justify-between p-6 bg-base-200/50 backdrop-blur-md border-b border-base-300">
-              <button onClick={() => setMediaPreview(null)} className="btn btn-ghost btn-square"><ArrowLeft size={20} /></button>
-              <h2 className="text-base-content font-black uppercase tracking-[0.2em] text-sm">Preview Media</h2>
-              <div className="w-10" />
-            </div>
-            <div className="flex-1 flex items-center justify-center p-6 bg-black relative">
-              {mediaPreview.type === "IMAGE" ? (
-                <img src={mediaPreview.url} alt="preview" className="max-w-full max-h-full object-contain" />
-              ) : (
-                <video src={mediaPreview.url} controls className="max-w-full max-h-full" />
-              )}
-            </div>
-            <div className="p-8 space-y-6 bg-base-100 border-t border-base-300">
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-base-200 border border-base-content/10">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${mediaPreview.viewOnce ? "bg-warning/20 text-warning" : "bg-base-content/5 text-base-content/30"}`}>
-                    {mediaPreview.viewOnce ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-base-content">View Once</p>
-                    <p className="text-xs text-base-content/40">{mediaPreview.viewOnce ? "Media vanishes after opening" : "Standard permanent view"}</p>
-                  </div>
-                </div>
-                <input type="checkbox" className="toggle border-[#1D4ED8] checked:bg-[#1D4ED8] checked:border-[#1D4ED8] hover:border-[#1D4ED8]" checked={mediaPreview.viewOnce} onChange={(e) => setMediaPreview({ ...mediaPreview, viewOnce: e.target.checked })} />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMediaPreview(null)}>
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="absolute bottom-0 left-0 right-0 z-50 bg-base-200 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] rounded-t-[32px] flex flex-col max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 px-6 relative shrink-0">
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-base-content/10" />
+                <button onClick={() => setMediaPreview(null)} className="btn btn-ghost btn-sm btn-circle text-base-content/50 hover:text-base-content"><X size={20} /></button>
+                <h2 className="text-base-content font-bold text-sm tracking-wide">Preview Media</h2>
+                <div className="w-8" />
               </div>
-              <button onClick={handleSendMedia} disabled={isUploading} className="btn bg-[#1D4ED8] hover:bg-[#1D4ED8]/90 text-white w-full h-16 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-[#1D4ED8]/30 border-none">
-                {isUploading ? <span className="loading loading-spinner" /> : <>Send to stranger <Send size={20} className="ml-2" /></>}
-              </button>
-            </div>
+              <div className="flex-1 min-h-0 bg-base-300/30 flex items-center justify-center p-4 relative overflow-hidden">
+                <div className="absolute inset-0 pattern-dots pattern-base-content pattern-bg-transparent pattern-opacity-5 pattern-size-4" />
+                <div className="relative z-10 w-full h-[30vh] md:h-[40vh] flex items-center justify-center">
+                  {mediaPreview.type === "IMAGE" ? (
+                    <img src={mediaPreview.url} alt="preview" className="max-w-full max-h-full object-contain rounded-xl shadow-lg ring-1 ring-base-content/5" />
+                  ) : (
+                    <video src={mediaPreview.url} controls className="max-w-full max-h-full rounded-xl shadow-lg ring-1 ring-base-content/5 bg-black/5" />
+                  )}
+                </div>
+              </div>
+              <div className="p-6 md:p-8 shrink-0 bg-base-100 flex flex-col gap-6 rounded-t-[32px] relative -mt-6">
+                <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-base-200 border border-base-content/5 cursor-pointer" onClick={() => setMediaPreview({ ...mediaPreview, viewOnce: !mediaPreview.viewOnce })}>
+                  <div className="flex items-center gap-3.5">
+                    <div className={`p-2.5 rounded-[14px] transition-colors ${mediaPreview.viewOnce ? "bg-warning/20 text-warning" : "bg-base-content/5 text-base-content/40"}`}>
+                      {mediaPreview.viewOnce ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-bold text-base-content mb-0.5">View Once</p>
+                      <p className="text-[11px] text-base-content/50 font-medium">{mediaPreview.viewOnce ? "Media vanishes after opening" : "Standard permanent view"}</p>
+                    </div>
+                  </div>
+                  <input type="checkbox" className="toggle toggle-primary toggle-sm" checked={mediaPreview.viewOnce} readOnly />
+                </div>
+                <button onClick={handleSendMedia} disabled={isUploading} className="btn bg-[#00a884] hover:bg-[#128C7E] disabled:bg-[#00a884]/50 disabled:text-white/50 text-white w-full h-14 rounded-2xl font-bold text-[15px] shadow-lg shadow-[#00a884]/20 border-none flex items-center justify-center gap-2">
+                  {isUploading ? <span className="loading loading-spinner" /> : <>Send to Stranger <Send size={18} /></>}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -513,9 +585,16 @@ function Bubble({ msg, isMine, allMessages, onReply }: { msg: ChatMessageDto; is
   const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
   const repliedMsg = msg.replyToId ? allMessages.find(m => m.messageId === msg.replyToId || (m.messageId.startsWith('local-') && m.messageId === msg.replyToId)) : null;
   const truncate = (s: string, max = 50) => s.length > max ? s.slice(0, max) + "..." : s;
-  const isMedia = msg.messageType === "IMAGE" || msg.messageType === "VIDEO";
+  const isMedia = msg.messageType === "IMAGE" || msg.messageType === "VIDEO" || msg.messageType === "STICKER";
 
   const renderMedia = () => {
+    if (msg.messageType === "STICKER") {
+      return (
+        <div className="relative">
+          <img src={msg.mediaPayload} alt="Sticker" className="w-32 h-32 object-contain drop-shadow-lg" />
+        </div>
+      );
+    }
     if (msg.viewOnce && !showViewOnce) return <div onClick={() => setShowViewOnce(true)} className="relative w-72 aspect-video rounded-3xl bg-[#1D4ED8]/10 backdrop-blur-3xl flex flex-col items-center justify-center gap-4 cursor-pointer group/vo border border-[#1D4ED8]/20 hover:bg-[#1D4ED8]/20 transition-colors"><div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-[#1D4ED8] shadow-2xl transition-transform group-hover/vo:scale-110"><EyeOff size={32} /></div><p className="text-[10px] font-black text-[#1D4ED8] uppercase tracking-[0.4em]">Unlock Private Media</p></div>;
     return <div className="relative overflow-hidden rounded-2xl bg-base-100 shadow-2xl ring-1 ring-[#1D4ED8]/10">
       {msg.messageType === "IMAGE" ? <img src={msg.mediaPayload} className="max-w-full max-h-[500px] object-cover cursor-pointer" onClick={() => window.open(msg.mediaPayload, "_blank")} alt="" /> : <video src={msg.mediaPayload} controls className="max-w-full max-h-[500px]" onEnded={() => msg.viewOnce && setShowViewOnce(false)} />}
@@ -549,9 +628,11 @@ function Bubble({ msg, isMine, allMessages, onReply }: { msg: ChatMessageDto; is
         onDragEnd={handleDragEnd}
         onClick={() => onReply({ messageId: msg.messageId, senderId: msg.senderId, content: msg.content, messageType: msg.messageType })}
         className={`max-w-[80%] md:max-w-[65%] rounded-2xl overflow-hidden cursor-pointer select-none relative z-10 transition-shadow 
-          ${isMine
-            ? "bg-[#1D4ED8] text-white shadow-sm"
-            : "bg-base-content/5 backdrop-blur-xl text-base-content border border-base-content/5 shadow-sm"
+          ${msg.messageType === "STICKER"
+            ? "bg-transparent shadow-none"
+            : isMine
+              ? "bg-[#00a884] text-white shadow-sm"
+              : "bg-base-content/5 backdrop-blur-xl text-base-content border border-base-content/5 shadow-sm"
           } ${isMedia ? "p-1" : "px-3.5 py-2"}`}
       >
         {repliedMsg && (
