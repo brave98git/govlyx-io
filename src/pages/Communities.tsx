@@ -21,7 +21,7 @@ import CommunitySidebar from "../components/community/CommunitySidebar";
 import CreatePost from "../components/ui/CreatePost";
 import PostCard from "../components/post/PostCard";
 import PostSkeleton from "../components/post/PostSkeleton";
-import type { CurrentUser as CardUser, CommunityPost } from "../components/post/PostCard";
+import type { CurrentUser as CardUser } from "../components/post/PostCard";
 import { toPostCardPost } from "../utils/postUtils";
 import { jwtDecode } from "jwt-decode";
 import { postService } from "../api/postService";
