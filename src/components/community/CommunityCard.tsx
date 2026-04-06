@@ -3,6 +3,7 @@ import { Users, Lock, EyeOff, ArrowRight } from "lucide-react";
 
 export type CommunityCardProps = {
   id: number;
+  slug?: string;
   name: string;
   description: string;
   members: number;
@@ -14,12 +15,12 @@ export type CommunityCardProps = {
   onClick?: () => void;
 };
 
-const CommunityCard = ({ id, name, description, members, avatarUrl, privacy, isMember, isOwner, hasPendingRequest, onClick }: CommunityCardProps) => {
+const CommunityCard = ({ id, slug, name, description, members, avatarUrl, privacy, isMember, isOwner, hasPendingRequest, onClick }: CommunityCardProps) => {
   const navigate = useNavigate();
 
   const handlePress = () => {
     if (onClick) onClick();
-    else navigate(`/communities/${id}`);
+    else navigate(`/communities/${slug || id}`);
   };
 
   const imgSrc = avatarUrl || `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(name)}`;

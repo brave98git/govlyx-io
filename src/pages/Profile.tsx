@@ -11,7 +11,6 @@ import PostSkeleton from "../components/post/PostSkeleton";
 import type { AnyPost, CurrentUser } from "../components/post/PostCard";
 import { useCurrentUser } from "../hooks/useUser";
 import { toPostCardPost, resolveMediaUrl } from "../utils/postUtils";
-import { postService } from "../api/postService";
 
 // ─── auth helpers ─────────────────────────────────────────────────────────────
 function authHeaders(): HeadersInit {
@@ -29,15 +28,6 @@ async function apiFetch(url: string) {
 }
 
 
-
-async function apiDelete(url: string) {
-  const res = await fetch(url, {
-    method: "DELETE",
-    headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json().catch(() => null);
-}
 
 // ─── share helper ─────────────────────────────────────────────────────────────
 
@@ -98,43 +88,16 @@ const Profile = () => {
   const [tab, setTab] = useState<Tab>("posts");
   const [postFilter, setPostFilter] = useState<PostFilter>("active");
 
-  async function handleDelete(type: 'posts' | 'social-posts', id: number) {
-    if (!window.confirm("Are you sure you want to delete this content? This action cannot be undone.")) return;
-    try {
-      await apiDelete(`/api/${type}/${id}`);
-      if (type === 'posts') {
-        setAllPosts(prev => prev.filter(p => p.id !== id));
-        setActivePosts(prev => prev.filter(p => p.id !== id));
-        setResolvedPosts(prev => prev.filter(p => p.id !== id));
-        setIssueCount(n => Math.max(0, n - 1));
-      } else {
-        setSocialPosts(prev => prev.filter(p => p.id !== id));
-        setSocialCount(n => Math.max(0, n - 1));
-      }
-      setActivity(prev => prev.filter(p => p.id !== id));
-    } catch (err) {
-      console.error("Delete failed", err);
-      alert("Failed to delete content. Please try again later.");
-    }
-  }
-
-  const handleVote = async (pollId: number, optionIds: number[]) => {
-    try {
-      await postService.voteInPoll(pollId, optionIds);
-      const updater = (prev: AnyPost[]) =>
-        prev.map(p => {
-          if (p.variant === 'poll' && (p as any).pollId === pollId) {
-            return { ...p, userHasVoted: true, votedOptionIds: optionIds };
-          }
-          return p;
-        });
-      setAllPosts(updater);
-      setActivePosts(updater);
-      setResolvedPosts(updater);
-      setSocialPosts(updater);
-      setActivity(updater);
-    } catch (err) {
-      console.error("Profile vote error:", err);
+  const handleDelete = (type: 'posts' | 'social-posts', id: number) => {
+    // Parent only handles state removal. PostCard handles confirm + API.
+    if (type === 'posts') {
+      setAllPosts(prev => prev.filter(p => p.id !== id));
+      setActivePosts(prev => prev.filter(p => p.id !== id));
+      setResolvedPosts(prev => prev.filter(p => p.id !== id));
+      setIssueCount(n => Math.max(0, n - 1));
+    } else {
+      setSocialPosts(prev => prev.filter(p => p.id !== id));
+      setSocialCount(n => Math.max(0, n - 1));
     }
   };
 
@@ -163,7 +126,7 @@ const Profile = () => {
     if (!user) return;
     const name = user.actualUsername ?? user.username ?? "User";
     setUsername(name);
-
+    
     if (user.createdAt)
       setMemberSince(formatDate(user.createdAt));
     if (user.pincode) setLocation(user.pincode);
@@ -230,7 +193,7 @@ const Profile = () => {
         if (postFilter === "active") setActivePosts(posts);
         if (postFilter === "resolved") setResolvedPosts(posts);
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setLoadingPosts(false));
   }, [tab, postFilter]);
 
@@ -241,7 +204,7 @@ const Profile = () => {
     setLoadingSocial(true);
     apiFetch("/api/social-posts/my-posts?limit=50")
       .then((b) => setSocialPosts((b?.data?.data ?? []).map(mapSocialPost)))
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setLoadingSocial(false));
 
   }, [tab]);
@@ -385,18 +348,18 @@ const Profile = () => {
       <div className="rounded-xl border border-base-300 bg-base-200 p-4">
         <div className="flex items-center gap-4">
           <div className="avatar">
-            <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-red-400 shadow-lg bg-base-300">
-              <img
-                src={user?.profileImage ? resolveMediaUrl(user.profileImage) : `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(username)}`}
-                alt="Profile Avatar"
-                className="w-full h-full object-cover"
+            <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-primary shadow-lg bg-base-300">
+               <img 
+                src={resolveMediaUrl(user?.profileImage, "social-posts") || `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(username)}`} 
+                alt="Profile Avatar" 
+                className="w-full h-full object-cover" 
               />
             </div>
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h1 className="font-semibold text-lg">{username}</h1>
-              <ShieldCheck size={16} className="text-red-400" />
+              <ShieldCheck size={16} className="text-[#1D4ED8]" />
             </div>
             <p className="text-sm opacity-70">
               {memberSince ? `Member since ${memberSince}` : "Loading…"} •{" "}
@@ -425,8 +388,8 @@ const Profile = () => {
                 key={f}
                 onClick={() => setPostFilter(f)}
                 className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition ${postFilter === f
-                  ? "bg-[#1D4ED8] text-white border-primary"
-                  : "border-base-300 hover:border-blue-400"
+                    ? "bg-[#1D4ED8] text-white border-[#1D4ED8]"
+                    : "border-base-300 hover:border-blue-400"
                   }`}
               >
                 {f === "active" && <Clock size={11} />}
@@ -449,12 +412,11 @@ const Profile = () => {
             />
           ) : (
             displayedPosts.map((p) => (
-              <PostCard
-                key={p.id}
-                post={p}
-                currentUser={currentUser}
-                onVote={handleVote}
-                onDelete={(id) => handleDelete('posts', id)}
+              <PostCard 
+                key={p.id} 
+                post={p} 
+                currentUser={currentUser} 
+                onDelete={(id) => handleDelete('posts', id)} 
               />
             ))
           )}
@@ -477,12 +439,11 @@ const Profile = () => {
             />
           ) : (
             socialPosts.map((p) => (
-              <PostCard
-                key={p.id}
-                post={p}
-                currentUser={currentUser}
-                onVote={handleVote}
-                onDelete={(id) => handleDelete('social-posts', id)}
+              <PostCard 
+                key={p.id} 
+                post={p} 
+                currentUser={currentUser} 
+                onDelete={(id) => handleDelete('social-posts', id)} 
               />
             ))
           )}
@@ -509,8 +470,7 @@ const Profile = () => {
                 key={`${post.id}-${post.variant}`}
                 post={post}
                 currentUser={currentUser}
-                onVote={handleVote}
-                onDelete={(id) => handleDelete(post.variant === 'issue' ? 'posts' : 'social-posts', id)}
+                hideDelete={true}
               />
             ))
           )}

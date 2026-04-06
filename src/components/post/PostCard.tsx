@@ -22,11 +22,12 @@ import {
   Play,
   Volume2,
   VolumeX,
+  ArrowUp,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CommentSection from "./CommentSection";
 import type { PostType } from "./CommentSection";
-import { resolveMediaUrl } from "../../utils/postUtils";
+import { resolveMediaUrl, toPostCardPost } from "../../utils/postUtils";
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 async function apiFetch(url: string, method: string, body?: unknown): Promise<unknown> {
@@ -46,6 +47,7 @@ async function apiFetch(url: string, method: string, body?: unknown): Promise<un
 
 const apiPost = (url: string, body: unknown) => apiFetch(url, "POST", body);
 const apiPut = (url: string, body?: unknown) => apiFetch(url, "PUT", body);
+const apiDelete = (url: string) => apiFetch(url, "DELETE");
 
 async function recordShare(postType: "posts" | "social-posts", id: number) {
   const url = `${window.location.origin}/${postType}/${id}`;
@@ -196,6 +198,7 @@ type PostCardProps = {
   onVote?: (pollId: number, optionIds: number[]) => void;
   onDelete?: (postId: number) => void;
   hideCommunityStrip?: boolean;
+  hideDelete?: boolean;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -334,7 +337,7 @@ function ModernMediaCarousel({
               animate={{ opacity: 1 }}
               className="flex flex-col items-center justify-center h-full w-full bg-slate-800/50"
             >
-              <div className="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center mb-3 mb-2">
+              <div className="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center mb-2">
                 <ImageIcon size={24} className="stroke-slate-400" />
               </div>
               <p className="text-xs font-medium text-slate-400 px-6 text-center">
@@ -498,13 +501,13 @@ function CommunityStrip({
   );
 }
 
-// ─── Author Row ───────────────────────────────────────────────────────────────
 function AuthorRow({
   post,
   badge,
   onDelete,
   isDeleting,
   showDelete,
+  hideDelete,
   rightAction,
 }: {
   post: AnyPost;
@@ -512,6 +515,7 @@ function AuthorRow({
   onDelete?: () => void;
   isDeleting?: boolean;
   showDelete?: boolean;
+  hideDelete?: boolean;
   rightAction?: React.ReactNode;
 }) {
   return (
@@ -565,16 +569,21 @@ function AuthorRow({
       </div>
       <div className="flex items-center gap-2">
         {rightAction}
-        {showDelete && onDelete && (
+        {showDelete && !hideDelete && onDelete && (
           <motion.button
-            onClick={onDelete}
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
             disabled={isDeleting}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="p-2 text-base-content/40 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-40"
+            whileHover={{ scale: 1.12, y: -1 }}
+            whileTap={{ scale: 0.94 }}
+            className="group/del relative flex h-9 w-9 items-center justify-center rounded-xl border border-transparent bg-base-300/40 text-base-content/40 transition-all duration-300 hover:border-red-500/30 hover:bg-red-500/5 hover:text-red-600 hover:shadow-lg hover:shadow-red-500/10 backdrop-blur-md disabled:opacity-30"
             title="Delete post"
           >
-            {isDeleting ? <span className="loading loading-spinner loading-xs" /> : <Trash2 size={16} />}
+            <div className="absolute inset-0 rounded-xl bg-red-500/0 transition-all duration-300 group-hover/del:bg-red-500/5" />
+            {isDeleting ? (
+              <span className="loading loading-spinner loading-xs" />
+            ) : (
+              <Trash2 size={16} className="relative z-10 transition-transform duration-300 group-hover/del:rotate-6" />
+            )}
           </motion.button>
         )}
       </div>
@@ -615,7 +624,7 @@ function ResolveModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (msg: string) => void;
+  onConfirm: (message: string) => void;
 }) {
   const [msg, setMsg] = useState("");
 
@@ -731,9 +740,11 @@ function ActionPill({
 function PollBody({
   post,
   onVote,
+  isProcessing,
 }: {
   post: PollPost;
   onVote?: (pollId: number, ids: number[]) => void;
+  isProcessing?: boolean;
 }) {
   const [votedIds, setVotedIds] = useState<number[]>(post?.votedOptionIds || []);
 
@@ -748,12 +759,12 @@ function PollBody({
   const showResults = post.showResults || post.userHasVoted || post.isExpired || votedIds.length > 0;
 
   const handleVote = (optionId: number) => {
-    if (post.isExpired || post.userHasVoted) return;
+    if (post.isExpired || isProcessing) return;
     const next = post.allowMultipleVotes
       ? votedIds.includes(optionId)
         ? votedIds.filter((id) => id !== optionId)
         : [...votedIds, optionId]
-      : [optionId];
+      : votedIds.includes(optionId) ? [] : [optionId]; // toggle for single vote too
     setVotedIds(next);
     onVote?.(post.pollId, next);
   };
@@ -847,7 +858,6 @@ function ScopePill({ scope, desc }: { scope?: BroadcastScope; desc?: string }) {
   );
 }
 
-// ─── Main PostCard ────────────────────────────────────────────────────────────
 export default function PostCard({
   post,
   currentUser,
@@ -858,6 +868,7 @@ export default function PostCard({
   onVote,
   onDelete,
   hideCommunityStrip,
+  hideDelete,
 }: PostCardProps) {
   const [liked, setLiked] = useState(!!(post as AnyPost)?.isLikedByCurrentUser);
   const [disliked, setDisliked] = useState(!!(post as IssuePost)?.isDislikedByCurrentUser);
@@ -870,11 +881,11 @@ export default function PostCard({
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isJoined, setIsJoined] = useState((post as CommunityPost).isMember ?? false);
-  const [hasShared, setHasShared] = useState(false);
+  const [isJoined, setIsJoined] = useState((post as any).isMember ?? false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { copied, flash } = useCopied();
 
   useEffect(() => {
@@ -885,10 +896,30 @@ export default function PostCard({
       setSaved(!!((post as any).isSavedByCurrentUser ?? (post as any).isSaved ?? false));
       if ("dislikeCount" in post) setDislikeCount((post as IssuePost).dislikeCount ?? 0);
       if ("isDislikedByCurrentUser" in post) setDisliked(!!(post as IssuePost).isDislikedByCurrentUser);
+      setIsJoined((post as any).isMember ?? false);
     }
   }, [post]);
 
+  useEffect(() => {
+    const handlePostSync = (e: any) => {
+      if (e.detail.postId !== post?.id) return;
+      if (e.detail.source === 'like') {
+        setLiked(e.detail.liked);
+        if (e.detail.likeCount !== undefined) setLikeCount(e.detail.likeCount);
+      } else if (e.detail.source === 'save') {
+        setSaved(e.detail.saved);
+      } else if (e.detail.source === 'share') {
+        if (e.detail.shareCount !== undefined) setShareCount(e.detail.shareCount);
+      }
+    };
+    window.addEventListener('POST_SYNC', handlePostSync);
+    return () => window.removeEventListener('POST_SYNC', handlePostSync);
+  }, [post?.id]);
+
   if (!post) return null;
+  if ((post as any).status === "DELETED" || (post as any).status === "FLAGGED") {
+    return null;
+  }
 
   const isIssue = post.variant === "issue";
   const isGovt = post.variant === "government";
@@ -922,15 +953,21 @@ export default function PostCard({
 
   // Handlers
   async function handleLike() {
-    if (isResolved) return;
+    if (isResolved || isProcessing) return;
+    setIsProcessing(true);
     const next = !liked;
+    const nextLikeCount = next ? likeCount + 1 : Math.max(0, likeCount - 1);
     setLiked(next);
     if (next && disliked) {
       setDisliked(false);
       setDislikeCount((n) => Math.max(0, n - 1));
     }
-    setLikeCount((n) => (next ? n + 1 : Math.max(0, n - 1)));
+    setLikeCount(nextLikeCount);
     onLike?.(post.id, next);
+
+    window.dispatchEvent(new CustomEvent('POST_SYNC', {
+      detail: { postId: post.id, source: 'like', liked: next, likeCount: nextLikeCount }
+    }));
 
     const ep = `/api/interactions/${interactionType}/${post.id}/like`;
     try {
@@ -939,35 +976,62 @@ export default function PostCard({
       if (data && typeof data.liked === "boolean") setLiked(data.liked);
       if (data && typeof data.likeCount === "number") setLikeCount(data.likeCount);
     } catch {
+      const prevLikeCount = next ? Math.max(0, nextLikeCount - 1) : nextLikeCount + 1;
       setLiked(!next);
-      setLikeCount((n) => (next ? Math.max(0, n - 1) : n + 1));
+      setLikeCount(prevLikeCount);
+      window.dispatchEvent(new CustomEvent('POST_SYNC', {
+        detail: { postId: post.id, source: 'like', liked: !next, likeCount: prevLikeCount }
+      }));
+    } finally {
+      setIsProcessing(false);
     }
   }
 
   async function handleDislike() {
-    if (!isIssue || isResolved) return;
+    if (!isIssue || isResolved || isProcessing) return;
     alert("Dislike feature coming soon!");
   }
 
   async function handleSave() {
+    if (isProcessing) return;
+    setIsProcessing(true);
     const next = !saved;
     setSaved(next);
     onSave?.(post.id, next);
+    
+    window.dispatchEvent(new CustomEvent('POST_SYNC', {
+      detail: { postId: post.id, source: 'save', saved: next }
+    }));
+
     try {
       await apiPost(`/api/interactions/${interactionType}/${post.id}/save`, {});
     } catch {
       setSaved(!next);
+      window.dispatchEvent(new CustomEvent('POST_SYNC', {
+        detail: { postId: post.id, source: 'save', saved: !next }
+      }));
+    } finally {
+      setIsProcessing(false);
     }
   }
 
   async function handleShare() {
+    if (isProcessing) return;
+    setIsProcessing(true);
     flash();
-    if (!hasShared) {
-      setShareCount((n) => n + 1);
+    try {
+      const nextShareCount = shareCount + 1;
+      setShareCount(nextShareCount);
       onShare?.(post.id);
-      setHasShared(true);
+      
+      window.dispatchEvent(new CustomEvent('POST_SYNC', {
+        detail: { postId: post.id, source: 'share', shareCount: nextShareCount }
+      }));
+
+      await recordShare(interactionType, post.id);
+    } finally {
+      setIsProcessing(false);
     }
-    await recordShare(interactionType, post.id);
   }
 
   async function handleResolveConfirm(message: string) {
@@ -988,29 +1052,34 @@ export default function PostCard({
   }
 
   async function handleDelete() {
-    if (onDelete) {
-      onDelete(post.id);
-      return;
-    }
-    if (!window.confirm("Delete this post?")) return;
+    if (!window.confirm("Are you sure you want to delete this post? This action cannot be undone.")) return;
+    
     setIsDeleting(true);
     try {
-      const ep = isIssue ? `/api/posts/${post.id}` : `/api/social-posts/${post.id}`;
-      await fetch(ep, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("authToken") || localStorage.getItem("token")}`,
-        },
-      });
-      window.location.reload();
-    } catch {
-      alert("Failed to delete post");
+      // Correctly route to either /api/social-posts/ or /api/posts/
+      const isSocial = post.variant === "social" || post.variant === "community" || post.variant === "poll";
+      const ep = isSocial ? `/api/social-posts/${post.id}` : `/api/posts/${post.id}`;
+      
+      await apiDelete(ep);
+      
+      // Notify parent to remove it from the list without a full page reload if possible
+      if (onDelete) {
+        onDelete(post.id);
+      } else {
+        // Fallback for cases where onDelete isn't provided (unlikely in modern feeds)
+        window.location.reload();
+      }
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      alert("Failed to delete post. Please try again later.");
     } finally {
       setIsDeleting(false);
     }
   }
 
   async function handleJoinCommunity(cid: number) {
+    if (isProcessing) return;
+    setIsProcessing(true);
     const next = !isJoined;
     setIsJoined(next);
     try {
@@ -1018,6 +1087,34 @@ export default function PostCard({
     } catch {
       setIsJoined(!next);
       alert("Could not join community.");
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  async function handlePollVote(pollId: number, optionIds: number[]) {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      // 1. Notify parent if needed
+      onVote?.(pollId, optionIds);
+
+      // 2. Perform API call
+      const res = (await apiPost(`/api/polls/${pollId}/vote`, optionIds)) as any;
+
+      // 3. Update the post data locally if we're in a poll variant
+      if (post.variant === "poll" && res) {
+        const updatedPoll = toPostCardPost(res) as PollPost;
+        // Merge the updated poll data into the current post object
+        Object.assign(post, updatedPoll);
+        // Force a re-render by updating a dummy state if needed, 
+        // but here we just rely on PollBody's internal sync with post.votedOptionIds
+      }
+    } catch (err: any) {
+      console.error("Poll vote failed:", err);
+      alert(err.message === "403" || err.message === "401" ? "Please login to vote." : "Failed to submit vote. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
   }
 
@@ -1034,7 +1131,7 @@ export default function PostCard({
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ y: -4, boxShadow: "0 20px 60px -15px rgba(0,0,0,0.1)" }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className={`rounded-2xl border ${borderClass} shadow-md overflow-hidden flex flex-col backdrop-blur-sm`}
+        className={`rounded-2xl border ${borderClass} shadow-md overflow-hidden flex flex-col backdrop-blur-sm relative group/card`}
       >
         <div className="p-5 sm:p-6 flex flex-col gap-4 flex-1">
           {/* Community Strip at top */}
@@ -1066,7 +1163,8 @@ export default function PostCard({
                 badge={isCommunity ? (post as CommunityPost).authorRole : undefined}
                 onDelete={handleDelete}
                 isDeleting={isDeleting}
-                showDelete={!!(post as any).canDelete || post.username === currentUser?.username}
+                showDelete={(post as any).canDelete !== undefined ? !!(post as any).canDelete : (currentUser && post.username === currentUser.username)}
+                hideDelete={hideDelete}
               />
             )}
           </div>
@@ -1153,7 +1251,7 @@ export default function PostCard({
 
               {/* Poll Variant Rendering */}
               {post.variant === "poll" && (post as any).options && (
-                <PollBody post={post as PollPost} onVote={onVote} />
+                <PollBody post={post as PollPost} onVote={handlePollVote} isProcessing={isProcessing} />
               )}
 
               {isResolved && (
@@ -1164,7 +1262,7 @@ export default function PostCard({
 
               {/* Horizontal Action Bar: Shown for all posts on mobile, and on desktop if NO media */}
               <div className={`flex items-center gap-2 border-t border-base-300 pt-3 ${hasMedia ? "lg:hidden" : "flex"}`}>
-                <ActionPill onClick={handleLike} active={liked} disabled={isResolved} activeClass="border-pink-500 text-pink-500 bg-transparent">
+                <ActionPill onClick={handleLike} active={liked} disabled={isResolved || isProcessing} activeClass="border-pink-500 text-pink-500 bg-transparent">
                   <Heart size={16} className={liked ? "fill-current" : ""} />
                   <span>{likeCount || "0"}</span>
                 </ActionPill>
@@ -1172,17 +1270,18 @@ export default function PostCard({
                   <MessageSquare size={16} className={commentsOpen ? "fill-current" : ""} />
                   <span>{post.commentCount ?? 0}</span>
                 </ActionPill>
-                <ActionPill onClick={handleShare} active={copied} activeClass="border-emerald-500 text-emerald-500 bg-transparent">
+                <ActionPill onClick={handleShare} active={copied} disabled={isProcessing} activeClass="border-emerald-500 text-emerald-500 bg-transparent">
                   <Share2 size={16} />
                   <span>{copied ? "Copied!" : (shareCount || "0")}</span>
                 </ActionPill>
                 <div className="flex-1" />
-                <ActionPill onClick={handleSave} active={saved} activeClass="border-amber-500 text-amber-500 bg-transparent">
+                <ActionPill onClick={handleSave} active={saved} disabled={isProcessing} activeClass="border-amber-500 text-amber-500 bg-transparent">
                   <Bookmark size={16} className={saved ? "fill-current" : ""} />
                 </ActionPill>
                 {isIssue && (
-                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved} activeClass="bg-rose-500/10 text-rose-500">
+                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved || isProcessing} activeClass="bg-rose-500/10 text-rose-500">
                     <ThumbsDown size={16} className={disliked ? "fill-current" : ""} />
+                    <span>{dislikeCount || "0"}</span>
                   </ActionPill>
                 )}
               </div>
@@ -1195,7 +1294,7 @@ export default function PostCard({
                 animate={{ opacity: 1, x: 0 }}
                 className="hidden lg:flex flex-col gap-2 p-1 rounded-2xl bg-base-200/50 border border-base-300 lg:order-2 shrink-0 sticky top-0"
               >
-                <ActionPill onClick={handleLike} active={liked} disabled={isResolved} vertical activeClass="border-pink-500 text-pink-500 bg-transparent">
+                <ActionPill onClick={handleLike} active={liked} disabled={isResolved || isProcessing} vertical activeClass="border-pink-500 text-pink-500 bg-transparent">
                   <Heart size={18} className={liked ? "fill-current" : ""} />
                   <span>{likeCount || "0"}</span>
                 </ActionPill>
@@ -1203,15 +1302,15 @@ export default function PostCard({
                   <MessageSquare size={18} className={commentsOpen ? "fill-current" : ""} />
                   <span>{post.commentCount ?? 0}</span>
                 </ActionPill>
-                <ActionPill onClick={handleShare} active={copied} vertical activeClass="border-emerald-500 text-emerald-500 bg-transparent">
+                <ActionPill onClick={handleShare} active={copied} disabled={isProcessing} vertical activeClass="border-emerald-500 text-emerald-500 bg-transparent">
                   <Share2 size={18} />
                   <span className="text-[9px] leading-tight mt-0.5">{copied ? "Copied" : (shareCount || "0")}</span>
                 </ActionPill>
-                <ActionPill onClick={handleSave} active={saved} vertical activeClass="border-amber-500 text-amber-500 bg-transparent">
+                <ActionPill onClick={handleSave} active={saved} disabled={isProcessing} vertical activeClass="border-amber-500 text-amber-500 bg-transparent">
                   <Bookmark size={18} className={saved ? "fill-current" : ""} />
                 </ActionPill>
                 {isIssue && (
-                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved} vertical activeClass="border-rose-500 text-rose-500 bg-transparent">
+                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved || isProcessing} vertical activeClass="border-rose-500 text-rose-500 bg-transparent">
                     <ThumbsDown size={18} className={disliked ? "fill-current" : ""} />
                     <span>{dislikeCount || "0"}</span>
                   </ActionPill>

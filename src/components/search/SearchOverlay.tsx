@@ -16,8 +16,6 @@ import {
 import PostCard from "../post/PostCard";
 import { toPostCardPost } from "../../utils/postUtils";
 import { useCurrentUser } from "../../hooks/useUser";
-import { API_BASE_URL } from "../../api/axiosConfig";
-
 
 // ─── Raw backend shape — defensive: accept every possible field name ──────────
 // SearchDto.Result fields (from SearchService builder calls):
@@ -73,12 +71,12 @@ function normalise(r: RawResult): NormResult {
   if (kind === "COMMUNITY") {
     return {
       ...base,
-      communityName:        r.communityName        ?? r.name        ?? undefined,
-      communitySlug:        r.communitySlug        ?? r.slug        ?? undefined,
-      communityAvatarUrl:   r.communityAvatarUrl   ?? r.avatarUrl   ?? r.imageUrl ?? r.communityImageUrl ?? undefined,
+      communityName: r.communityName ?? r.name ?? undefined,
+      communitySlug: r.communitySlug ?? r.slug ?? undefined,
+      communityAvatarUrl: r.communityAvatarUrl ?? r.avatarUrl ?? r.imageUrl ?? r.communityImageUrl ?? undefined,
       communityDescription: r.communityDescription ?? r.description ?? undefined,
-      memberCount:          r.memberCount          ?? r.communityMemberCount ?? r.membersCount ?? undefined,
-      locationName:         r.locationName         ?? r.location    ?? undefined,
+      memberCount: r.memberCount ?? r.communityMemberCount ?? r.membersCount ?? undefined,
+      locationName: r.locationName ?? r.location ?? undefined,
     };
   }
 
@@ -86,7 +84,7 @@ function normalise(r: RawResult): NormResult {
     const rawTag = r.hashtag ?? r.tag ?? r.hashtagName ?? "";
     return {
       ...base,
-      hashtag:   rawTag.toString().replace(/^#+/, ""),
+      hashtag: rawTag.toString().replace(/^#+/, ""),
       postCount: r.postCount ?? r.count ?? undefined,
     };
   }
@@ -111,7 +109,8 @@ function authHeaders(): HeadersInit {
 }
 
 // ─── Post mapper ──────────────────────────────────────────────────────────────
-// Replaced by toPostCardPost from postUtils
+
+// dtoToAnyPost removed in favor of shared toPostCardPost utility
 
 // ─── useDebounce ──────────────────────────────────────────────────────────────
 
@@ -171,7 +170,7 @@ const DEBUG = false; // disabled to hide raw JSON in search results
 
 function CommunityCard({ r }: { r: NormResult }) {
   const navigate = useNavigate();
-  
+
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     // Convert search result to community data
@@ -194,7 +193,7 @@ function CommunityCard({ r }: { r: NormResult }) {
     };
     navigate("/communities", { state: { selectedCommunity: communityData } });
   };
-  
+
   return (
     <div>
       <button
@@ -348,7 +347,7 @@ function useFullSearch(committedQuery: string) {
       const params = new URLSearchParams({ q, limit: "20" });
       if (cursor !== null) params.set("cursor", String(cursor));
 
-      const res = await fetch(`${API_BASE_URL}/api/search?${params}`, { headers: authHeaders() });
+      const res = await fetch(`/api/search?${params}`, { headers: authHeaders() });
 
       if (res.status === 401 || res.status === 403) throw new Error("Not authenticated — please log in.");
 
@@ -410,8 +409,8 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
 
   const debouncedInput = useDebounce(inputValue, 300);
   const { results, loading, initialLoading, hasMore, error, loadMore } = useFullSearch(committedQuery);
-
   const { data: user } = useCurrentUser();
+
   const currentUser = user ? {
     id: user.id,
     username: user.actualUsername || user.username,
@@ -434,7 +433,7 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
       setQuickResults([]); setShowDropdown(false); return;
     }
     setQuickLoading(true);
-    fetch(`${API_BASE_URL}/api/search/quick?q=${encodeURIComponent(debouncedInput)}`, { headers: authHeaders() })
+    fetch(`/api/search/quick?q=${encodeURIComponent(debouncedInput)}`, { headers: authHeaders() })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((raw: RawApiResponse) => {
         setQuickResults(extractItems(raw).map(normalise));
@@ -462,12 +461,12 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
 
   if (!open) return null;
 
-  const postResults      = results.filter((r) => r.kind === "POST" || r.kind === "SOCIAL_POST");
+  const postResults = results.filter((r) => r.kind === "POST" || r.kind === "SOCIAL_POST");
   const communityResults = results.filter((r) => r.kind === "COMMUNITY");
-  const hashtagResults   = results.filter((r) => r.kind === "HASHTAG");
-  const unknownResults   = results.filter((r) => r.kind === "UNKNOWN");
-  const hasResults       = results.length > 0;
-  const showEmpty        = committedQuery && !initialLoading && !loading && !hasResults && !error;
+  const hashtagResults = results.filter((r) => r.kind === "HASHTAG");
+  const unknownResults = results.filter((r) => r.kind === "UNKNOWN");
+  const hasResults = results.length > 0;
+  const showEmpty = committedQuery && !initialLoading && !loading && !hasResults && !error;
 
   return (
     <div
@@ -578,10 +577,10 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
                       key={`${r.kind}-${r.id ?? i}`}
                       post={post}
                       currentUser={currentUser}
-                      onLike={(id, liked) => console.log("like", id, liked)}
-                      onSave={(id, saved) => console.log("save", id, saved)}
-                      onShare={(id) => navigator.clipboard?.writeText(`${window.location.origin}/post/${id}`).catch(() => {})}
-                      onComment={(id) => { window.location.href = `/post/${id}`; }}
+                      onLike={(id: number, liked: boolean) => console.log("like", id, liked)}
+                      onSave={(id: number, saved: boolean) => console.log("save", id, saved)}
+                      onShare={(id: number) => navigator.clipboard?.writeText(`${window.location.origin}/post/${id}`).catch(() => { })}
+                      onComment={(id: number) => { window.location.href = `/post/${id}`; }}
                     />
                   );
                 })}

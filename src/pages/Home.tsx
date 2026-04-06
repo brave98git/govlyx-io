@@ -6,9 +6,10 @@ import type { AnyPost } from "../components/post/PostCard";
 import EmptyState from "../components/ui/EmptyState";
 import PostSkeleton from "../components/post/PostSkeleton";
 import axiosInstance from "../api/axiosConfig";
-import { toPostCardPost } from "../utils/postUtils";
-import { postService } from "../api/postService";
+
+
 import { useCurrentUser } from "../hooks/useUser";
+import { toPostCardPost } from "../utils/postUtils";
 
 
 const FEED_SIZE = 20;
@@ -155,20 +156,20 @@ const SORT_TABS: { key: "hot" | "new" | "top"; label: string; icon: any }[] = [
 ];
 
 const Home = () => {
-  const { data: user } = useCurrentUser();
-  const currentUser = user ? {
-    id: user.id,
-    username: user.actualUsername || user.username,
-    role: user.role
-  } : undefined;
-
   const [sourceTab, setSourceTab] = useState<"all" | "location" | "following" | "official">("all");
   const [sortTab, setSortTab] = useState<"hot" | "new" | "top">("hot");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
 
+  const { data: user } = useCurrentUser();
   const { posts, loading, initialLoading, hasMore, error, fatalError, loadMore, retry, updatePost, prependPost, setPosts } =
     useFeed(sourceTab, sortTab);
+
+  const currentUser = user ? {
+    id: user.id,
+    username: user.actualUsername || user.username,
+    role: user.role
+  } : undefined;
 
   const handleLike = useCallback((postId: number, liked: boolean) => {
     const post = posts.find((p) => p.id === postId);
@@ -188,37 +189,10 @@ const Home = () => {
     window.location.href = `/post/${postId}`;
   }, []);
 
-  const handleVote = useCallback(async (pollId: number, optionIds: number[]) => {
-    try {
-      await postService.voteInPoll(pollId, optionIds);
-      const post = posts.find(p => p.variant === 'poll' && p.pollId === pollId);
-      if (post) {
-        updatePost(post.id, { userHasVoted: true, votedOptionIds: optionIds } as any);
-      }
-    } catch (err) {
-      console.error("Vote error:", err);
-    }
-  }, [posts, updatePost]);
-
-  const handleDelete = useCallback(async (postId: number) => {
-    if (!window.confirm("Are you sure you want to delete this post?")) return;
-    const post = posts.find(p => p.id === postId);
-    if (!post) return;
-    let endpoint = `/api/social-posts/${postId}`;
-    if (post.variant === "issue") endpoint = `/api/posts/${postId}`;
-    else if (post.variant === "social" && post.isPoll) endpoint = `/api/polls/${post.pollId}`;
-    try {
-      const res = await axiosInstance.delete(endpoint);
-      if (res.status === 200 || res.status === 204) setPosts(prev => prev.filter(p => p.id !== postId));
-      else {
-        const errorData = res.data || {};
-        alert(errorData.message || "Failed to delete post.");
-      }
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("An error occurred while deleting the post.");
-    }
-  }, [posts, setPosts]);
+  const handleDelete = useCallback((postId: number) => {
+    // Only update local state; PostCard handles confirmation and the API call.
+    setPosts(prev => prev.filter(p => p.id !== postId));
+  }, [setPosts]);
 
   useEffect(() => {
     const onPostCreated = (e: Event) => {
@@ -239,7 +213,7 @@ const Home = () => {
             <span className="text-sm font-bold opacity-60">Feed Filters</span>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all text-sm font-bold ${showFilters ? "bg-[#1D4ED8] text-white border-primary shadow-md" : "bg-base-200 border-base-300 text-base-content/70"}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all text-sm font-bold ${showFilters ? "bg-[#1D4ED8] text-white border-[#1D4ED8] shadow-md" : "bg-base-200 border-base-300 text-base-content/70"}`}
             >
               <SlidersHorizontal size={16} />
               {showFilters ? "Hide" : "Explore"}
@@ -253,13 +227,13 @@ const Home = () => {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:w-full lg:gap-4"
               >
-                <div className="flex items-center justify-between gap-2 overflow-hidden">
-                  <div className="flex gap-1 bg-base-200/50 p-1 rounded-xl w-full lg:w-auto overflow-x-auto scrollbar-hide">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex gap-1 bg-base-200/50 p-1 rounded-xl w-full lg:w-auto">
                     {SOURCE_TABS.map((t) => (
                       <button
                         key={t.key}
                         onClick={() => setSourceTab(t.key)}
-                        className={`flex-none rounded-lg px-4 py-1.5 text-sm font-bold transition-all whitespace-nowrap ${sourceTab === t.key ? "bg-[#1D4ED8] text-white shadow-md" : "text-base-content/70 hover:text-base-content hover:bg-base-300/50"}`}
+                        className={`flex-1 lg:flex-none rounded-lg px-4 py-1.5 text-sm font-bold transition-all whitespace-nowrap ${sourceTab === t.key ? "bg-[#1D4ED8] text-white shadow-md" : "text-base-content/70 hover:text-base-content hover:bg-base-300/50"}`}
                       >
                         {t.label}
                       </button>
@@ -267,7 +241,7 @@ const Home = () => {
                   </div>
                   <button
                     onClick={() => setShowSort(!showSort)}
-                    className={`lg:hidden flex items-center justify-center p-2 h-[38px] w-[38px] rounded-xl border transition-all ${showSort ? "bg-[#1D4ED8]/10 border-primary/30 text-primary" : "bg-base-200 border-base-300 text-base-content/60"}`}
+                    className={`lg:hidden flex items-center justify-center p-2 h-[38px] w-[38px] rounded-xl border transition-all ${showSort ? "bg-[#1D4ED8]/10 border-[#1D4ED8]/30 text-[#1D4ED8]" : "bg-base-200 border-base-300 text-base-content/60"}`}
                   >
                     <Clock size={18} />
                   </button>
@@ -281,12 +255,12 @@ const Home = () => {
                         exit={{ height: 0, opacity: 0 }}
                         className="flex gap-1 bg-base-200/50 p-1 rounded-xl lg:bg-transparent lg:p-0 overflow-hidden"
                       >
-                        <div className="flex gap-1 bg-base-200/50 p-1 rounded-xl w-full lg:w-auto overflow-x-auto scrollbar-hide">
+                        <div className="flex gap-1 bg-base-200/50 p-1 rounded-xl w-full lg:w-auto">
                           {SORT_TABS.map((t) => (
                             <button
                               key={t.key}
                               onClick={() => { setSortTab(t.key); if (window.innerWidth < 1024) setShowSort(false); }}
-                              className={`flex flex-none lg:flex-none items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-sm font-bold transition-all whitespace-nowrap ${sortTab === t.key ? "bg-[#1D4ED8] text-white shadow-md" : "text-base-content/70 hover:text-base-content hover:bg-base-300/50"}`}
+                              className={`flex flex-1 lg:flex-none items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-sm font-bold transition-all ${sortTab === t.key ? "bg-[#1D4ED8] text-white shadow-md" : "text-base-content/70 hover:text-base-content hover:bg-base-300/50"}`}
                             >
                               <t.icon size={16} />
                               {t.label}
@@ -334,7 +308,6 @@ const Home = () => {
                 onSave={handleSave}
                 onShare={handleShare}
                 onComment={handleComment}
-                onVote={handleVote}
                 onDelete={handleDelete}
               />
             </div>

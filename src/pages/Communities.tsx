@@ -24,7 +24,6 @@ import PostSkeleton from "../components/post/PostSkeleton";
 import type { CurrentUser as CardUser } from "../components/post/PostCard";
 import { toPostCardPost } from "../utils/postUtils";
 import { jwtDecode } from "jwt-decode";
-import { postService } from "../api/postService";
 
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -230,7 +229,7 @@ function highlight(text: string, query: string): React.ReactNode {
   const parts = text.split(new RegExp(`(${esc})`, "gi"));
   return parts.map((p, i) =>
     p.toLowerCase() === query.toLowerCase()
-      ? <mark key={i} className="bg-[#1D4ED8]/25 text-primary rounded px-0.5">{p}</mark>
+      ? <mark key={i} className="bg-blue-700/25 text-blue-700 rounded px-0.5">{p}</mark>
       : p
   );
 }
@@ -428,7 +427,7 @@ function InviteTab({
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`flex-1 btn btn-xs rounded-lg transition-all ${mode === m ? "bg-[#1D4ED8] text-white font-semibold border-none hover:bg-[#1D4ED8]-focus" : "btn-ghost"}`}
+            className={`flex-1 btn btn-xs rounded-lg transition-all ${mode === m ? "bg-blue-700 text-white font-semibold border-none hover:bg-blue-800" : "btn-ghost"}`}
           >
             {m === "send" ? <><Mail size={12} className="mr-1" /> Send Invite</> : <><ClipboardCheck size={12} className="mr-1" /> Pending Invites</>}
           </button>
@@ -512,7 +511,7 @@ function InviteTab({
                 </label>
 
                 {selectedUser ? (
-                  <div className="flex items-center gap-3 rounded-xl border border-primary bg-[#1D4ED8]/10 p-3">
+                  <div className="flex items-center gap-3 rounded-xl border border-blue-700 bg-blue-700/10 p-3">
                     {avatar(selectedUser.username, selectedUser.profileImage)}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold">{selectedUser.displayName || selectedUser.username}</p>
@@ -584,7 +583,7 @@ function InviteTab({
               </div>
 
               <button
-                className="btn bg-[#1D4ED8] text-white font-semibold border-none hover:bg-[#1D4ED8]-focus w-full gap-2"
+                className="btn bg-blue-700 text-white font-semibold border-none hover:bg-blue-800 w-full gap-2"
                 disabled={!selectedUser || sending}
                 onClick={handleSendInvite}
               >
@@ -595,7 +594,7 @@ function InviteTab({
 
               <div className="rounded-xl border border-base-300 bg-base-200 p-4 space-y-3">
                 <div className="flex items-start gap-3">
-                  <span className="text-xl text-primary"><Link size={20} /></span>
+                  <span className="text-xl text-blue-700"><Link size={20} /></span>
                   <div>
                     <p className="text-sm font-semibold">Generate Shareable Link</p>
                     <p className="text-xs opacity-60 mt-0.5">
@@ -611,7 +610,7 @@ function InviteTab({
                         {genResult.inviteLink}
                       </code>
                       <button
-                        className={`btn btn-xs shrink-0 ${copiedGen ? "btn-success" : "bg-[#1D4ED8] text-white font-semibold border-none hover:bg-[#1D4ED8]-focus"}`}
+                        className={`btn btn-xs shrink-0 ${copiedGen ? "btn-success" : "bg-blue-700 text-white font-semibold border-none hover:bg-blue-800"}`}
                         onClick={() => copyToClipboard(genResult!.inviteLink, setCopiedGen)}
                       >
                         {copiedGen ? "✓ Copied" : "Copy"}
@@ -693,7 +692,7 @@ function InviteTab({
           ))}
           {hasMore && !listLoading && (
             <button
-              className="w-full py-2 text-sm text-primary hover:opacity-70"
+              className="w-full py-2 text-sm text-blue-700 hover:opacity-70"
               onClick={() => loadInvites(cursor, false)}
             >
               Load more ↓
@@ -834,8 +833,8 @@ export function AcceptInvitePage() {
   return (
     <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-base-100 rounded-3xl border border-base-300 shadow-2xl overflow-hidden">
-        <div className="h-24 bg-gradient-to-br from-primary/30 via-primary/10 to-base-200 flex items-center justify-center">
-          <Home size={48} className="text-primary" />
+        <div className="h-24 bg-gradient-to-br from-[#1D4ED8]/30 via-[#1D4ED8]/10 to-base-200 flex items-center justify-center">
+          <Home size={48} className="text-blue-700" />
         </div>
 
         <div className="px-6 pb-6 pt-4 space-y-4">
@@ -894,7 +893,7 @@ export function AcceptInvitePage() {
               )}
 
               <button
-                className="btn bg-[#1D4ED8] text-white font-semibold border-none hover:bg-[#1D4ED8]-focus w-full"
+                className="btn bg-blue-700 text-white font-semibold border-none hover:bg-blue-800 w-full"
                 onClick={handleAccept}
               >
                 <Rocket size={18} className="mr-2" /> Accept &amp; Join Community
@@ -915,7 +914,7 @@ export function AcceptInvitePage() {
 
           {(status === "success" || status === "already") && accepted && (
             <div className="text-center space-y-3 py-4">
-              <div className="flex justify-center text-primary"><PartyPopper size={48} /></div>
+              <div className="flex justify-center text-blue-700"><PartyPopper size={48} /></div>
               <h2 className="font-bold text-lg">
                 {status === "already" ? "Already a member!" : "You're in!"}
               </h2>
@@ -923,7 +922,7 @@ export function AcceptInvitePage() {
                 Welcome to <strong>{accepted.communityName}</strong>.
               </p>
               <button
-                className="btn bg-[#1D4ED8] text-white font-semibold border-none hover:bg-[#1D4ED8]-focus w-full"
+                className="btn bg-blue-700 text-white font-semibold border-none hover:bg-blue-800 w-full"
                 onClick={() => navigate('/communities')}
               >
                 Open Community <ChevronLeft size={16} className="rotate-180 ml-1" />
@@ -1234,7 +1233,7 @@ function AdminPanel({
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`relative flex-1 btn btn-xs rounded-lg gap-1 transition-all ${tab === t.key ? "bg-[#1D4ED8] text-white font-semibold border-none hover:bg-[#1D4ED8]/90" : "btn-ghost opacity-60 hover:opacity-100"
+                className={`relative flex-1 btn btn-xs rounded-lg gap-1 transition-all ${tab === t.key ? "bg-blue-700 text-white font-semibold border-none hover:bg-blue-800" : "btn-ghost opacity-60 hover:opacity-100"
                   }`}
               >
                 <span>{t.icon}</span>
@@ -1283,7 +1282,7 @@ function AdminPanel({
                 </div>
               ))}
               {reqHasMore && !reqLoading && (
-                <button className="w-full py-2 text-sm text-primary" onClick={() => loadRequests(reqCursor, false)}>
+                <button className="w-full py-2 text-sm text-blue-700" onClick={() => loadRequests(reqCursor, false)}>
                   Load more ↓
                 </button>
               )}
@@ -1336,7 +1335,7 @@ function AdminPanel({
                 </div>
               ))}
               {memHasMore && !memLoading && (
-                <button className="w-full py-2 text-sm text-primary" onClick={() => loadMembers(memCursor, false)}>
+                <button className="w-full py-2 text-sm text-blue-700" onClick={() => loadMembers(memCursor, false)}>
                   Load more ↓
                 </button>
               )}
@@ -1383,15 +1382,15 @@ function AdminPanel({
                   {(["PUBLIC", "PRIVATE", "SECRET"] as const).map(p => (
                     <button key={p} type="button"
                       onClick={() => setSettingsForm(f => ({ ...f, privacy: p }))}
-                      className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${settingsForm.privacy === p ? "border-primary bg-[#1D4ED8]/10" : "border-base-300 hover:border-base-400"}`}>
+                      className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${settingsForm.privacy === p ? "border-blue-700 bg-blue-700/10" : "border-base-300 hover:border-base-400"}`}>
                       <span className="text-xl">{PRIV_ICON[p]}</span>
                       <div className="flex-1">
-                        <p className={`text-sm font-semibold ${settingsForm.privacy === p ? "text-[#1D4ED8]" : ""}`}>
+                        <p className={`text-sm font-semibold ${settingsForm.privacy === p ? "text-blue-700" : ""}`}>
                           {p.charAt(0) + p.slice(1).toLowerCase()}
                         </p>
                         <p className="text-xs opacity-50">{PRIV_DESC[p]}</p>
                       </div>
-                      {settingsForm.privacy === p && <span className="text-[#1D4ED8]">✓</span>}
+                      {settingsForm.privacy === p && <span className="text-blue-700">✓</span>}
                     </button>
                   ))}
                 </div>
@@ -1408,13 +1407,13 @@ function AdminPanel({
                       <p className="text-sm font-medium">{label}</p>
                       <p className="text-xs opacity-50">{desc}</p>
                     </div>
-                     <input type="checkbox" className="toggle border-[#1D4ED8] checked:bg-[#1D4ED8] checked:border-[#1D4ED8] hover:border-[#1D4ED8] toggle-sm"
+                    <input type="checkbox" className="toggle border-[#1D4ED8] bg-[#1D4ED8] checked:bg-[#1D4ED8] toggle-sm"
                       checked={settingsForm[key as keyof typeof settingsForm] as boolean}
                       onChange={e => setSettingsForm(f => ({ ...f, [key]: e.target.checked }))} />
                   </label>
                 ))}
               </div>
-              <button className="btn bg-[#1D4ED8] text-white font-semibold border-none hover:bg-[#1D4ED8]/90 w-full" disabled={settingsBusy} onClick={saveSettings}>
+              <button className="btn bg-blue-700 text-white font-semibold border-none hover:bg-blue-800 w-full" disabled={settingsBusy} onClick={saveSettings}>
                 {settingsBusy ? <><Spin xs /> Saving…</> : <><Save size={18} className="mr-2" /> Save Changes</>}
               </button>
               <div className="rounded-xl border border-error/30 bg-error/5 p-4 space-y-2 mt-4">
@@ -1441,9 +1440,9 @@ function AdminPanel({
               )}
               {!insightsLoading && insights && (
                 <>
-                  <div className="rounded-2xl border border-base-300 bg-gradient-to-br from-primary/10 to-base-200 p-5 text-center">
+                  <div className="rounded-2xl border border-base-300 bg-gradient-to-br from-[#1D4ED8]/10 to-base-200 p-5 text-center">
                     <p className="text-xs opacity-50 uppercase tracking-widest mb-1">Health Score</p>
-                    <p className="text-5xl font-black text-primary">
+                    <p className="text-5xl font-black text-blue-700">
                       {insights.healthScore != null ? Math.round(insights.healthScore) : "—"}
                     </p>
                     {insights.healthTier && <p className="text-sm font-semibold mt-1 opacity-70">{insights.healthTier}</p>}
@@ -1475,7 +1474,7 @@ function AdminPanel({
                             <span className="font-semibold">{Math.round(val)}</span>
                           </div>
                           <div className="w-full bg-base-300 rounded-full h-1.5">
-                            <div className="bg-[#1D4ED8] h-1.5 rounded-full transition-all" style={{ width: `${Math.min(100, val)}%` }} />
+                            <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: `${Math.min(100, val)}%` }} />
                           </div>
                         </div>
                       ))}
@@ -1536,10 +1535,10 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
         <div className="flex items-center justify-between px-5 py-4 border-b border-base-300 shrink-0">
           <div>
             <h2 className="font-bold text-base flex items-center gap-2">
-              <Plus size={18} className="text-primary" /> Create Community
+              <Plus size={18} className="text-blue-700" /> Create Community
             </h2>
             <div className="flex gap-1 mt-1.5">
-              {[1, 2].map(s => <div key={s} className={`h-1 w-8 rounded-full transition-all ${step >= s ? "bg-[#1D4ED8]" : "bg-base-300"}`} />)}
+              {[1, 2].map(s => <div key={s} className={`h-1 w-8 rounded-full transition-all ${step >= s ? "bg-blue-700" : "bg-base-300"}`} />)}
             </div>
           </div>
           <button onClick={onClose} className="btn btn-ghost btn-circle btn-sm"><X size={18} /></button>
@@ -1558,7 +1557,7 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
                 <label className="block text-sm font-semibold mb-1">Image URL <span className="opacity-40 font-normal">(optional)</span></label>
                 <input className="input input-bordered w-full" placeholder="https://..."
                   value={form.avatarUrl} onChange={e => setForm(f => ({ ...f, avatarUrl: e.target.value }))} />
-                <p className="text-xs opacity-50 mt-1 text-primary">If left blank, a random robot avatar will be assigned.</p>
+                <p className="text-xs opacity-50 mt-1 text-blue-700">If left blank, a random robot avatar will be assigned.</p>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">Description <span className="text-error">*</span></label>
@@ -1572,7 +1571,7 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
                 <div className="grid grid-cols-3 gap-1.5">
                   {CATS.map(cat => (
                     <button key={cat} type="button" onClick={() => setForm(f => ({ ...f, category: cat }))}
-                      className={`rounded-xl border py-2 px-1 text-center text-xs transition-all ${form.category === cat ? "border-[#1D4ED8] bg-[#1D4ED8]/15 text-[#1D4ED8] font-semibold" : "border-base-300 hover:border-base-400 opacity-70"}`}>
+                      className={`rounded-xl border py-2 px-1 text-center text-xs transition-all ${form.category === cat ? "border-blue-700 bg-blue-700/15 text-blue-700 font-semibold" : "border-base-300 hover:border-base-400 opacity-70"}`}>
                       <div className="text-lg mb-0.5">{CAT_ICON[cat]}</div>
                       <div className="leading-tight">{cat.replace(/_/g, " ")}</div>
                     </button>
@@ -1588,13 +1587,13 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
                 <div className="space-y-2">
                   {(["PUBLIC", "PRIVATE", "SECRET"] as const).map(p => (
                     <button key={p} type="button" onClick={() => setForm(f => ({ ...f, privacy: p }))}
-                      className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${form.privacy === p ? "border-primary bg-[#1D4ED8]/10" : "border-base-300 hover:border-base-400"}`}>
+                      className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${form.privacy === p ? "border-blue-700 bg-blue-700/10" : "border-base-300 hover:border-base-400"}`}>
                       <span className="text-2xl">{PRIV_ICON[p]}</span>
                       <div className="flex-1">
-                        <p className={`text-sm font-semibold ${form.privacy === p ? "text-[#1D4ED8]" : ""}`}>{p.charAt(0) + p.slice(1).toLowerCase()}</p>
+                        <p className={`text-sm font-semibold ${form.privacy === p ? "text-blue-700" : ""}`}>{p.charAt(0) + p.slice(1).toLowerCase()}</p>
                         <p className="text-xs opacity-50">{PRIV_DESC[p]}</p>
                       </div>
-                      {form.privacy === p && <span className="text-[#1D4ED8] font-bold">✓</span>}
+                      {form.privacy === p && <span className="text-blue-700 font-bold">✓</span>}
                     </button>
                   ))}
                 </div>
@@ -1613,7 +1612,7 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
                 ].map(({ key, label, desc }) => (
                   <label key={key} className="flex items-center justify-between gap-3 rounded-xl border border-base-300 p-3 cursor-pointer hover:border-base-400">
                     <div><p className="text-sm font-medium">{label}</p><p className="text-xs opacity-50">{desc}</p></div>
-                     <input type="checkbox" className="toggle border-[#1D4ED8] checked:bg-[#1D4ED8] checked:border-[#1D4ED8] hover:border-[#1D4ED8] toggle-sm"
+                    <input type="checkbox" className="toggle border-[#1D4ED8] bg-[#1D4ED8] checked:bg-[#1D4ED8] toggle-sm"
                       checked={form[key as keyof CreateForm] as boolean}
                       onChange={e => setForm(f => ({ ...f, [key]: e.target.checked }))} />
                   </label>
@@ -1664,12 +1663,10 @@ function DetailPanel({
   community,
   onClose,
   onMembershipChange,
-  myCommunities,
 }: {
   community: CommunityData;
   onClose: () => void;
   onMembershipChange: (id: number, isMember: boolean, delta: number, hasPendingRequest?: boolean) => void;
-  myCommunities: CommunityData[];
 }) {
   const normalise = (raw: CommunityData): CommunityData =>
     raw.isOwner ? { ...raw, isMember: true } : raw;
@@ -1715,7 +1712,7 @@ function DetailPanel({
           const backendPending = detail.hasPendingRequest === true || detail.pendingRequest === true || detail.hasPendingRequest === "true" || detail.pendingRequest === "true";
           const communityId = detail.id ?? community.id;
           const localPending = getPendingLocal().includes(String(communityId));
-          const finalIsOwner = detail.isOwner === true || detail.owner === true || detail.isOwner === "true" || detail.owner === "true" || !!community?.isOwner;
+          const finalIsOwner = detail.isOwner === true || detail.owner === true || detail.isOwner === "true" || detail.owner === "true" || !!community.isOwner;
 
           if (fetchedMember || finalIsOwner) removePendingLocal(communityId);
           else if (backendPending) addPendingLocal(communityId);
@@ -1732,7 +1729,7 @@ function DetailPanel({
       } catch { }
     })();
     return () => { active = false; };
-  }, [community.slug, myCommunities]);
+  }, [community.slug]);
 
   const loadPosts = useCallback(async (cur: number | null, score: number | null, replace: boolean) => {
     const canView = c.isMember || c.isOwner || c.privacy === "PUBLIC";
@@ -1856,6 +1853,7 @@ function DetailPanel({
                         setC((prev) => ({ ...prev, postCount: prev.postCount + 1 }));
                       }}
                     />
+
                     <div className="flex items-center justify-between border-b border-base-300 pb-2">
                       <span className="text-sm font-semibold opacity-80">Feed</span>
                       <div className="flex bg-base-200 rounded-lg p-0.5 border border-base-300">
@@ -1892,43 +1890,29 @@ function DetailPanel({
                     {posts.map(post => {
                       const cardPost = toPostCardPost({
                         ...post,
-                        variant: "social",
+                        variant: "social", // allow toPostCardPost to re-detect if it's a poll
                         username: post.authorUsername,
+                        userProfileImage: post.authorProfileImage,
+                        isLikedByCurrentUser: post.isLikedByMe,
                         communityId: c.id,
                         communityName: c.name,
                         communityAvatar: c.avatarUrl || undefined,
                         communityMemberCount: String(c.memberCount || 0),
                         isMember: c.isMember,
-                        isLikedByCurrentUser: post.isLikedByMe,
                       });
+
                       return (
                         <PostCard
                           key={post.id}
                           post={cardPost}
                           currentUser={currentUser || undefined}
-                          onVote={async (_pollId, ids) => {
-                            try {
-                              // We use the post.id for matching in communities as pollId might be nested differently
-                              await postService.voteInPoll(_pollId, ids);
-                              setPosts(prev => prev.map(p => {
-                                if (p.id === post.id) {
-                                   return { ...p, userHasVoted: true, votedOptionIds: ids } as any;
-                                }
-                                return p;
-                              }));
-                            } catch (err) {
-                              console.error("Community vote error:", err);
-                            }
-                          }}
                           hideCommunityStrip={true}
                         />
-
-
                       );
                     })}
 
                     {hasMore && !loading && (
-                      <button className="w-full py-2 text-sm text-primary hover:opacity-70" onClick={() => loadPosts(cursor, cursorScore, false)}>Load more ↓</button>
+                      <button className="w-full py-2 text-sm text-blue-700 hover:opacity-70" onClick={() => loadPosts(cursor, cursorScore, false)}>Load more ↓</button>
                     )}
                   </>
                 )}
@@ -2179,7 +2163,7 @@ const Community = () => {
                 {suggestions.map(c => (
                   <button key={c.id} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-base-200 text-left transition-colors"
                     onMouseDown={e => { e.preventDefault(); commitSearch(c.name); }}>
-                    <span className="text-primary shrink-0"><Home size={18} /></span>
+                    <span className="text-[#1D4ED8] shrink-0"><Home size={18} /></span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{highlight(c.name, query)}</p>
                       {c.description && <p className="text-xs opacity-50 truncate">{c.description}</p>}
@@ -2251,21 +2235,20 @@ const Community = () => {
           {!searchLoading && searchResults.length > 0 && (
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               {searchResults.map((c: any) => {
-                const local = myCommunities.find((x: CommunityData) => x.id === c.id);
+                const local = myCommunities.find(x => x.id === c.id);
                 return (
-                  <CommunityCard key={c.id} id={Number(c.id)} name={String(c.name)} description={String(c.description)}
-                    members={Number(c.memberCount) || 0} avatarUrl={c.avatarUrl} privacy={String(c.privacy)}
+                  <CommunityCard key={c.id} id={c.id} slug={c.slug} name={c.name} description={c.description}
+                    members={c.memberCount} avatarUrl={c.avatarUrl} privacy={c.privacy}
                     isMember={!!local?.isMember} isOwner={!!local?.isOwner} hasPendingRequest={!!local?.hasPendingRequest}
                     onClick={() => {
-                        const sel: any = local ? { ...c, isMember: local.isMember, isOwner: local.isOwner, hasPendingRequest: local.hasPendingRequest } : c;
-                        setSelected(sel);
+                      setSelected(local ? { ...c, isMember: local.isMember, isOwner: local.isOwner, hasPendingRequest: local.hasPendingRequest } : c);
                     }} />
                 );
               })}
             </div>
           )}
           {searchHasMore && !searchLoading && (
-            <button className="w-full py-2 text-sm text-primary hover:opacity-70 transition-opacity"
+            <button className="w-full py-2 text-sm text-[#1D4ED8] hover:opacity-70 transition-opacity"
               disabled={searchLoadingMore} onClick={() => doSearch(committed, searchCursor, false)}>
               {searchLoadingMore ? <Spin xs /> : "Load more ↓"}
             </button>
@@ -2329,7 +2312,7 @@ const Community = () => {
                                 </div>
                                 {c.description && <p className="text-xs text-base-content/60 line-clamp-1">{c.description}</p>}
                                 <p className="text-[11px] font-medium text-base-content/45 mt-1 flex items-center gap-1">
-                                  <Users size={11} className="text-primary/60" /> {c.memberCount.toLocaleString()} members
+                                  <Users size={11} className="text-[#1D4ED8]/60" /> {c.memberCount.toLocaleString()} members
                                 </p>
                               </div>
                             </div>
@@ -2367,8 +2350,8 @@ const Community = () => {
                 <div className="space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-widest opacity-40">✓ Joined · {joinedOnly.length}</p>
                   <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                    {joinedOnly.map((c: any) => (
-                      <CommunityCard key={c.id} id={c.id} name={c.name} description={c.description}
+                    {joinedOnly.map(c => (
+                      <CommunityCard key={c.id} id={c.id} slug={c.slug} name={c.name} description={c.description}
                         members={c.memberCount} avatarUrl={c.avatarUrl} privacy={c.privacy} onClick={() => setSelected(c)} />
                     ))}
                   </div>
@@ -2388,7 +2371,7 @@ const Community = () => {
       )}
 
       {selected && !adminTarget && (
-        <DetailPanel community={selected} onClose={() => setSelected(null)} onMembershipChange={syncMembership} myCommunities={myCommunities} />
+        <DetailPanel community={selected} onClose={() => setSelected(null)} onMembershipChange={syncMembership} />
       )}
 
       {adminTarget && (

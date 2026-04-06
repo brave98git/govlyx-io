@@ -13,8 +13,8 @@ const PostDetail: React.FC = () => {
   const [post, setPost] = useState<AnyPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const { data: user } = useCurrentUser();
+
   const currentUser = user ? {
     id: user.id,
     username: user.actualUsername || user.username,
@@ -70,7 +70,7 @@ const PostDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-10 h-10 text-[#1D4ED8] animate-spin" />
+        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
         <p className="text-sm opacity-50 font-medium">Loading post...</p>
       </div>
     );
@@ -85,7 +85,7 @@ const PostDetail: React.FC = () => {
           </div>
           <h2 className="text-xl font-bold text-red-900">Oops! Something went wrong</h2>
           <p className="text-red-700 max-w-sm">{error || "We couldn't find the post you're looking for."}</p>
-          <button 
+          <button
             onClick={() => navigate(-1)}
             className="btn btn-ghost btn-sm text-red-700 hover:bg-red-100 border-red-200"
           >
@@ -111,21 +111,13 @@ const PostDetail: React.FC = () => {
           post={post}
           currentUser={currentUser}
           onLike={(likedId, liked) => {
-             setPost(prev => prev && prev.id === likedId ? { ...prev, isLikedByCurrentUser: liked, likeCount: prev.likeCount + (liked ? 1 : -1) } : prev);
+            setPost(prev => prev && prev.id === likedId ? { ...prev, isLikedByCurrentUser: liked, likeCount: prev.likeCount + (liked ? 1 : -1) } : prev);
           }}
           onSave={(savedId, saved) => {
-             setPost(prev => prev && prev.id === savedId ? { ...prev, isSaved: saved } as any : prev);
-          }}
-          onVote={async (pollId, ids) => {
-            try {
-              await postService.voteInPoll(pollId, ids);
-              setPost(prev => prev ? { ...prev, userHasVoted: true, votedOptionIds: ids } as any : prev);
-            } catch (err) {
-              console.error("Detail vote error:", err);
-            }
+            setPost(prev => prev && prev.id === savedId ? { ...prev, isSaved: saved } as any : prev);
           }}
           onDelete={() => {
-             navigate("/", { replace: true });
+            navigate("/", { replace: true });
           }}
         />
       </div>
