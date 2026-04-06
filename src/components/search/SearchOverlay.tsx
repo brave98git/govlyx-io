@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import PostCard from "../post/PostCard";
 import type { AnyPost, SocialPost, GovernmentPost } from "../post/PostCard";
+import { API_BASE_URL } from "../../api/axiosConfig";
 
 // ─── Raw backend shape — defensive: accept every possible field name ──────────
 // SearchDto.Result fields (from SearchService builder calls):
@@ -356,7 +357,7 @@ function useFullSearch(committedQuery: string) {
       const params = new URLSearchParams({ q, limit: "20" });
       if (cursor !== null) params.set("cursor", String(cursor));
 
-      const res = await fetch(`/api/search?${params}`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE_URL}/api/search?${params}`, { headers: authHeaders() });
 
       if (res.status === 401 || res.status === 403) throw new Error("Not authenticated — please log in.");
 
@@ -435,7 +436,7 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
       setQuickResults([]); setShowDropdown(false); return;
     }
     setQuickLoading(true);
-    fetch(`/api/search/quick?q=${encodeURIComponent(debouncedInput)}`, { headers: authHeaders() })
+    fetch(`${API_BASE_URL}/api/search/quick?q=${encodeURIComponent(debouncedInput)}`, { headers: authHeaders() })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((raw: RawApiResponse) => {
         setQuickResults(extractItems(raw).map(normalise));
