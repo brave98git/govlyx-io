@@ -54,6 +54,44 @@ interface MediaPreview {
   viewOnce: boolean;
 }
 
+// ── Image Compression Utility ────────────────────────────────────────────────
+async function compressImage(file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.8): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        // Returns base64
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function StrangerChat({ onClose, standalone }: { onClose?: () => void; standalone?: boolean }) {
@@ -102,17 +140,39 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
     setShowAttachMenu(false);
   };
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    const newPreviews = files.map(file => ({
-      file,
-      url: URL.createObjectURL(file),
-      type: (file.type.startsWith("video/") ? "VIDEO" : "IMAGE") as "IMAGE" | "VIDEO",
-      viewOnce: false
-    }));
-    setMediaPreviews(prev => [...prev, ...newPreviews]);
-    e.target.value = "";
+
+    setIsUploading(true);
+    try {
+      const newPreviews: MediaPreview[] = [];
+      for (const file of files) {
+        let url: string;
+        let type: "IMAGE" | "VIDEO" = file.type.startsWith("video/") ? "VIDEO" : "IMAGE";
+
+        if (type === "IMAGE") {
+          // Compress and get base64 immediately for preview + faster send
+          const compressedBase64 = await compressImage(file);
+          url = compressedBase64;
+        } else {
+          url = URL.createObjectURL(file);
+        }
+
+        newPreviews.push({
+          file,
+          url,
+          type,
+          viewOnce: false
+        });
+      }
+      setMediaPreviews(prev => [...prev, ...newPreviews]);
+    } catch (err) {
+      console.error("File processing failed", err);
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
   };
 
   const handleSendMedia = async () => {
@@ -120,17 +180,20 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
     setIsUploading(true);
     try {
       for (const preview of mediaPreviews) {
-        const reader = new FileReader();
-        const base64Promise = new Promise<string>((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-        });
-        reader.readAsDataURL(preview.file);
-        const base64 = await base64Promise;
+        let base64 = preview.url;
+        if (preview.type === "VIDEO") {
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string);
+          });
+          reader.readAsDataURL(preview.file);
+          base64 = await base64Promise;
+        }
 
         await sendMedia(chat.session.sessionId, {
           type: preview.type,
           mediaPayload: base64,
-          mimeType: preview.file.type,
+          mimeType: preview.type === "IMAGE" ? "image/jpeg" : preview.file.type,
           mediaName: preview.file.name,
           viewOnce: preview.viewOnce,
           replyToId: replyTo?.messageId
@@ -198,8 +261,8 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
   };
 
   const containerBase = standalone
-    ? "flex flex-col w-full h-full bg-base-200/50 backdrop-blur-2xl relative overflow-hidden"
-    : "flex flex-col w-full md:max-w-2xl h-full md:h-[90vh] md:rounded-3xl overflow-hidden bg-base-200 shadow-2xl backdrop-blur-xl relative border border-base-300";
+    ? "flex flex-col w-full h-full lg:h-[100dvh] bg-base-200/50 backdrop-blur-2xl relative overflow-hidden"
+    : "flex flex-col w-full md:max-w-2xl h-[100dvh] md:h-[90vh] md:rounded-3xl overflow-hidden bg-base-200 shadow-2xl backdrop-blur-xl relative border border-base-300";
 
   const renderContent = () => (
     <div className={containerBase}>
@@ -209,7 +272,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
 
       {/* ── Header Area (Persistent & Sticky) ── */}
       {!standalone && (
-        <div className="shrink-0 z-20">
+        <div className="shrink-0 z-20 pt-[env(safe-area-inset-top,0px)]">
           <header className="flex items-center justify-between gap-3 px-4 md:px-6 pb-2 bg-base-300/90 backdrop-blur-xl border-b border-base-300 pt-3 md:pt-4">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-[#1D4ED8] text-white shadow-lg shadow-[#1D4ED8]/20">
@@ -280,7 +343,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       </main>
 
       {/* ── Footer ── */}
-      <footer className="shrink-0 p-2 md:p-4 pb-1 md:pb-2 relative z-30">
+      <footer className="shrink-0 p-2 md:p-4 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] md:pb-2 relative z-30">
         {(chat.status === "CONNECTED" || chat.status === "PARTNER_LEFT") && (
           <div className="max-w-[1000px] mx-auto">
             <AnimatePresence>

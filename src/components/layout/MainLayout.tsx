@@ -24,7 +24,7 @@ const MainLayout = () => {
           <Navbar />
 
           {/* Layout area BELOW navbar */}
-          <div className="pt-14 h-[calc(100vh-3.5rem)]">
+          <div className="pt-[calc(3.5rem+env(safe-area-inset-top,0px))] h-[calc(100dvh-(3.5rem+env(safe-area-inset-top,0px)))]">
             <div className="mx-auto max-w-[1780px] px-4 h-full">
               <div className="grid grid-cols-12 gap-4 mt-3 h-full">
 
@@ -57,10 +57,10 @@ const MainLayout = () => {
       <div className="drawer-side lg:hidden z-50">
         <label
           htmlFor="mobile-drawer"
-          className="drawer-overlay mt-14 h-[calc(100vh-3.5rem)]"
+          className="drawer-overlay mt-[calc(3.5rem+env(safe-area-inset-top,0px))] h-[calc(100vh-(3.5rem+env(safe-area-inset-top,0px)))]"
         />
 
-        <div className="mt-14 h-[calc(100vh-3.5rem)] w-72 bg-base-200 p-4 flex flex-col">
+        <div className="mt-[calc(3.5rem+env(safe-area-inset-top,0px))] h-[calc(100vh-(3.5rem+env(safe-area-inset-top,0px)))] w-72 bg-base-200 p-4 flex flex-col">
           {/* Drawer Header */}
           <div className="mb-4 flex items-center justify-between">
             <span className="text-sm font-semibold opacity-70">Menu</span>
