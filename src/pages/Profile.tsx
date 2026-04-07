@@ -381,12 +381,12 @@ const Profile = () => {
       {/* Issues tab */}
       {tab === "posts" && (
         <div className="space-y-3">
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {(["active", "resolved"] as PostFilter[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setPostFilter(f)}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition ${postFilter === f
+                className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition ${postFilter === f
                     ? "bg-[#1D4ED8] text-white border-[#1D4ED8]"
                     : "border-base-300 hover:border-blue-400"
                   }`}

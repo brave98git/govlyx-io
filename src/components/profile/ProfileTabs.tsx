@@ -13,12 +13,12 @@ const ProfileTabs = ({ active, onChange }: Props) => {
   ];
 
   return (
-    <div className="flex gap-2 border-b border-base-300">
+    <div className="flex gap-2 border-b border-base-300 overflow-x-auto scrollbar-hide">
       {tabs.map((tab) => (
         <button
           key={tab.key}
           onClick={() => onChange(tab.key)}
-          className={`px-4 py-2 text-sm rounded-t-lg transition ${
+          className={`shrink-0 px-4 py-2 text-sm rounded-t-lg transition ${
             active === tab.key
               ? "bg-blue-700 text-white"
               : "opacity-70 hover:opacity-100"

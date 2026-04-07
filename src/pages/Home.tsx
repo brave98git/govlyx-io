@@ -228,12 +228,12 @@ const Home = () => {
                 className="overflow-hidden flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:w-full lg:gap-4"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex gap-1 bg-base-200/50 p-1 rounded-xl w-full lg:w-auto">
+                  <div className="flex gap-1 bg-base-200/50 p-1 rounded-xl w-full lg:w-auto overflow-x-auto scrollbar-hide">
                     {SOURCE_TABS.map((t) => (
                       <button
                         key={t.key}
                         onClick={() => setSourceTab(t.key)}
-                        className={`flex-1 lg:flex-none rounded-lg px-4 py-1.5 text-sm font-bold transition-all whitespace-nowrap ${sourceTab === t.key ? "bg-[#1D4ED8] text-white shadow-md" : "text-base-content/70 hover:text-base-content hover:bg-base-300/50"}`}
+                        className={`shrink-0 lg:flex-none rounded-lg px-4 py-1.5 text-sm font-bold transition-all whitespace-nowrap ${sourceTab === t.key ? "bg-[#1D4ED8] text-white shadow-md" : "text-base-content/70 hover:text-base-content hover:bg-base-300/50"}`}
                       >
                         {t.label}
                       </button>
@@ -255,12 +255,12 @@ const Home = () => {
                         exit={{ height: 0, opacity: 0 }}
                         className="flex gap-1 bg-base-200/50 p-1 rounded-xl lg:bg-transparent lg:p-0 overflow-hidden"
                       >
-                        <div className="flex gap-1 bg-base-200/50 p-1 rounded-xl w-full lg:w-auto">
+                        <div className="flex gap-1 bg-base-200/50 p-1 rounded-xl w-full lg:w-auto overflow-x-auto scrollbar-hide">
                           {SORT_TABS.map((t) => (
                             <button
                               key={t.key}
                               onClick={() => { setSortTab(t.key); if (window.innerWidth < 1024) setShowSort(false); }}
-                              className={`flex flex-1 lg:flex-none items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-sm font-bold transition-all ${sortTab === t.key ? "bg-[#1D4ED8] text-white shadow-md" : "text-base-content/70 hover:text-base-content hover:bg-base-300/50"}`}
+                              className={`flex shrink-0 lg:flex-none items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-sm font-bold transition-all ${sortTab === t.key ? "bg-[#1D4ED8] text-white shadow-md" : "text-base-content/70 hover:text-base-content hover:bg-base-300/50"}`}
                             >
                               <t.icon size={16} />
                               {t.label}
