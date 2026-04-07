@@ -25,7 +25,7 @@ const MainLayout = () => {
           <Navbar />
 
           {/* Layout area BELOW navbar */}
-          <div className="flex-1 pt-[calc(3.75rem+env(safe-area-inset-top,0px))] overflow-hidden">
+          <div className="flex-1 overflow-hidden">
             <div className="mx-auto max-w-[1780px] px-4 h-full">
               <div className="grid grid-cols-12 gap-4 mt-3 h-full">
 

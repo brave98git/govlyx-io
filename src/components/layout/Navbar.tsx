@@ -51,7 +51,7 @@ const Navbar = () => {
   return (
     <>
       <motion.header
-        className="fixed top-0 z-[100] w-full border-b border-base-300 bg-base-200/95 backdrop-blur-md shadow-md pt-[env(safe-area-inset-top,0px)]"
+        className="sticky top-0 z-[100] w-full border-b border-base-300 bg-base-200/95 backdrop-blur-md shadow-md pt-[env(safe-area-inset-top,0px)]"
         initial={{ y: -16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.35 }}
