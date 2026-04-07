@@ -343,9 +343,9 @@ const Profile = () => {
         : allPosts;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-2 sm:pt-0">
       {/* Profile Header */}
-      <div className="rounded-xl border border-base-300 bg-base-200 p-4">
+      <div className="rounded-xl border border-base-300 bg-base-200 p-3 sm:p-4">
         <div className="flex items-center gap-4">
           <div className="avatar">
             <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-primary shadow-lg bg-base-300">
@@ -356,24 +356,23 @@ const Profile = () => {
               />
             </div>
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="font-semibold text-lg">{username}</h1>
-              <ShieldCheck size={16} className="text-[#1D4ED8]" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <h1 className="font-extrabold text-xs sm:text-sm md:text-lg truncate max-w-full leading-tight">{username}</h1>
+              <ShieldCheck size={12} className="text-[#1D4ED8] shrink-0" />
             </div>
-            <p className="text-sm opacity-70">
-              {memberSince ? `Member since ${memberSince}` : "Loading…"} •{" "}
-              {location}
+            <p className="text-[9px] sm:text-xs opacity-70 truncate line-clamp-1">
+              {memberSince ? `Member since ${memberSince}` : "Loading…"} • {location}
             </p>
           </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <StatCard value={issueCount} label="Issues" />
-        <StatCard value={socialCount} label="Social Posts" />
-        <StatCard value={communityCount} label="Communities" />
+        <StatCard value={socialCount} label="S-Posts" />
+        <StatCard value={communityCount} label="Groups" />
       </div>
 
       {/* Tabs */}

@@ -367,9 +367,9 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
 
             {chat.status === "CONNECTED" ? (
               <div className="flex flex-col gap-2 relative z-50">
-                <div className="flex items-end gap-2 w-full">
+                <div className="flex items-end gap-2 w-full px-1 md:px-0">
                   {/* WhatsApp style chat bar */}
-                  <div className="flex-1 flex items-end bg-base-100 rounded-3xl min-h-[48px] shadow-sm border border-base-content/10 px-1 py-1 relative">
+                  <div className="flex-1 min-w-0 flex items-end bg-base-100 rounded-3xl min-h-[48px] shadow-sm border border-base-content/10 px-1 py-1 relative">
                     <button onClick={() => { setShowStickerMenu(!showStickerMenu); setShowAttachMenu(false); }} className={`btn btn-ghost btn-circle btn-sm shrink-0 mb-[2px] transition-colors ${showStickerMenu ? "text-[#1D4ED8]" : "text-base-content/50 hover:text-base-content"}`}>
                       <Zap size={22} /> {/* We use Zap or Smile for stickers */}
                     </button>
@@ -421,7 +421,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                   </div>
 
                   {/* Primary Action Button (Send) */}
-                  <div className="flex items-end h-full pb-1">
+                  <div className="flex items-end h-full pb-1 shrink-0">
                     <button onClick={handleSend} disabled={!draft.trim()} className="btn bg-[#1D4ED8] hover:bg-[#1e40af] disabled:bg-base-content/10 disabled:text-base-content/30 disabled:shadow-none text-white btn-circle shrink-0 h-[44px] w-[44px] shadow-lg shadow-[#1D4ED8]/20 border-none transition-all duration-200 flex items-center justify-center">
                       <Send size={18} className="ml-0.5" />
                     </button>
