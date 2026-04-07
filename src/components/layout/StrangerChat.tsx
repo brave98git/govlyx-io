@@ -1,6 +1,7 @@
 // src/components/layout/StrangerChat.tsx
 import { useEffect, useRef, useState, useCallback, useMemo, type KeyboardEvent } from "react";
 import { Dices, Zap, Search, AlertTriangle, Plus, Image as ImageIcon, Video, X, Eye, EyeOff, Send, Trash2, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { FiSmile } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "../../hooks/useChat";
 import { sendMedia } from "../../api/chatApi.service";
@@ -262,7 +263,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
 
   const containerBase = standalone
     ? "flex flex-col w-full h-full lg:h-[100dvh] bg-base-200/50 backdrop-blur-2xl relative overflow-hidden"
-    : "flex flex-col w-full md:max-w-2xl h-[100dvh] md:h-[90vh] md:rounded-3xl overflow-hidden bg-base-200 shadow-2xl backdrop-blur-xl relative border border-base-300";
+    : "flex flex-col w-full md:max-w-2xl h-full md:h-[90vh] md:rounded-3xl overflow-hidden bg-base-200 shadow-2xl backdrop-blur-xl relative border border-base-300";
 
   const renderContent = () => (
     <div className={containerBase}>
@@ -343,7 +344,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       </main>
 
       {/* ── Footer ── */}
-      <footer className="shrink-0 p-2 md:p-4 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] md:pb-2 relative z-30">
+      <footer className="shrink-0 p-1 md:p-4 pb-[env(safe-area-inset-bottom,0px)] md:pb-2 relative z-30">
         {(chat.status === "CONNECTED" || chat.status === "PARTNER_LEFT") && (
           <div className="max-w-[1000px] mx-auto">
             <AnimatePresence>
@@ -371,7 +372,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                   {/* WhatsApp style chat bar */}
                   <div className="flex-1 min-w-0 flex items-end bg-base-100 rounded-3xl min-h-[48px] shadow-sm border border-base-content/10 px-1 py-1 relative">
                     <button onClick={() => { setShowStickerMenu(!showStickerMenu); setShowAttachMenu(false); }} className={`btn btn-ghost btn-circle btn-sm shrink-0 mb-[2px] transition-colors ${showStickerMenu ? "text-[#1D4ED8]" : "text-base-content/50 hover:text-base-content"}`}>
-                      <Zap size={22} /> {/* We use Zap or Smile for stickers */}
+                      <FiSmile size={22} />
                     </button>
 
                     <AnimatePresence>
