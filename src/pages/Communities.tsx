@@ -347,7 +347,7 @@ function InviteTab({
       setSendResult(result);
       setSelectedUser(null); setSearchQ(""); setMessage(""); setSuggestions([]);
       if (mode === "list") loadInvites(null, true);
-    } catch { setSendError("Network error. Please try again."); }
+    } catch { setSendError("Server unreachable. Please check your connection."); }
     finally { setSending(false); }
   }
 
@@ -365,7 +365,7 @@ function InviteTab({
         return;
       }
       setGenResult(d?.data ?? d);
-    } catch { alert("Network error."); }
+    } catch { alert("Server unreachable. Please check your connection."); }
     finally { setGenLoading(false); }
   }
 
@@ -402,7 +402,7 @@ function InviteTab({
       });
       if (!res.ok) { alert("Could not revoke."); return; }
       setInvites(prev => prev.filter(i => i.id !== inviteId));
-    } catch { alert("Network error."); }
+    } catch { alert("Server unreachable. Please check your connection."); }
     finally { setRevoking(null); }
   }
 
@@ -798,7 +798,7 @@ export function AcceptInvitePage() {
         }
       } catch (err) {
         console.error("Invite Preview Error:", err);
-        setErrorMsg("Network error. Please try again.");
+        setErrorMsg("Server unreachable. Please check your connection.");
       }
       finally { setPreviewLoading(false); }
     })();
@@ -826,7 +826,7 @@ export function AcceptInvitePage() {
       setAccepted(result);
       setStatus(result.message?.toLowerCase().includes("already") ? "already" : "success");
     } catch {
-      setErrorMsg("Network error. Please try again.");
+      setErrorMsg("Server unreachable. Please check your connection.");
       setStatus("error");
     }
   }
@@ -1026,7 +1026,7 @@ function AdminPanel({
       }
     } catch (err: any) {
       console.error("[reviewRequest] Network/proxy error:", url, err);
-      alert("Network error – request may not have reached the server.");
+      alert("Server unreachable – please check your connection.");
     } finally {
       setActingReq(null);
     }
@@ -1110,7 +1110,7 @@ function AdminPanel({
           return m;
         }));
       }
-    } catch { alert("Network error."); }
+    } catch { alert("Server unreachable. Please check your connection."); }
     finally { setActingMem(null); }
   }
 
@@ -1139,7 +1139,7 @@ function AdminPanel({
       const updated: CommunityData = { ...c, ...raw, isOwner: true, isMember: true };
       setC(updated); onCommunityUpdated(updated);
       setSettingsMsg("✅ Saved successfully.");
-    } catch { setSettingsMsg("❌ Network error."); }
+    } catch { setSettingsMsg("❌ Server unreachable."); }
     finally { setSettingsBusy(false); }
   }
 
@@ -1150,7 +1150,7 @@ function AdminPanel({
       const res = await fetch(`/api/communities/${c.id}/archive`, { method: "DELETE", headers: hdrs() });
       if (!res.ok) { alert("Archive failed."); return; }
       alert("Community archived."); onClose();
-    } catch { alert("Network error."); }
+    } catch { alert("Server unreachable. Please check your connection."); }
     finally { setArchiveBusy(false); }
   }
 
@@ -1525,7 +1525,7 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
       if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(d?.message || `Error ${res.status}`); return; }
       const d = await res.json(); const raw = d?.data ?? d;
       onDone({ ...raw, isMember: true, isOwner: true, postCount: raw.postCount ?? 0, memberCount: raw.memberCount ?? 1, createdAt: raw.createdAt ?? new Date().toISOString() });
-    } catch { setErr("Network error."); }
+    } catch { setErr("Server unreachable."); }
     finally { setBusy(false); }
   }
 

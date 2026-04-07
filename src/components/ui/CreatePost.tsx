@@ -322,7 +322,7 @@ function PostForm({
       setError({
         type: isNetwork ? "network" : "error",
         msg: isNetwork
-          ? "Network error — check your connection and try again."
+          ? "Server unreachable — please check your connection."
           : "Unexpected error. Please try again.",
       });
     } finally {
@@ -659,7 +659,7 @@ function PollForm({
       setTimeout(() => onClose(), 1500);
     } catch (e: unknown) {
       const isNet = e instanceof TypeError && (e as TypeError).message?.toLowerCase().includes("fetch");
-      setApiError(isNet ? "Network error — check your connection." : "Server error. Please try again.");
+      setApiError(isNet ? "Server unreachable — please check your connection." : "Server error. Please try again.");
     } finally {
       setLoading(false);
     }

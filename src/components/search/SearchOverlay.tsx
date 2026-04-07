@@ -354,32 +354,65 @@ function useFullSearch(committedQuery: string) {
     replace ? setInitialLoading(true) : setLoading(true);
     setError(null);
 
-    try {
-      const params = new URLSearchParams({ q, limit: "20" });
-      if (cursor !== null) params.set("cursor", String(cursor));
+      // 1. Initial local lookup for instant feedback
+      const offlineItems = getOfflineSuggestions(q);
+      const convertedOffline = offlineItems.map(item => ({
+        kind: item.kind,
+        id: typeof item.id === 'number' ? item.id : undefined,
+        communityName: item.kind === 'COMMUNITY' ? item.displayText : undefined,
+        communitySlug: item.slug,
+        communityAvatarUrl: item.avatarUrl || undefined,
+        hashtag: item.kind === 'HASHTAG' ? item.displayText.replace('#', '') : undefined,
+        postDto: item.kind === 'POST' || item.kind === 'SOCIAL_POST' ? { content: item.displayText } : undefined,
+        _raw: {}
+      }));
 
-      const res = await fetch(`/api/search?${params}`, { headers: authHeaders() });
+      if (replace) setResults(convertedOffline as NormResult[]);
 
-      if (res.status === 401 || res.status === 403) throw new Error("Not authenticated — please log in.");
+      // 2. Network Fetch
+      try {
+        const params = new URLSearchParams({ q, limit: "20" });
+        if (cursor !== null) params.set("cursor", String(cursor));
 
-      const ct = res.headers.get("content-type") ?? "";
-      if (!ct.includes("application/json"))
-        throw new Error(`API unreachable (${res.status}). Check your Vite proxy.`);
+        const res = await fetch(`/api/search?${params}`, { headers: authHeaders() });
 
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
+        if (res.status === 401 || res.status === 403) throw new Error("Please log in to see more.");
 
-      const raw: RawApiResponse = await res.json();
+        const ct = res.headers.get("content-type") ?? "";
+        if (!ct.includes("application/json")) throw new Error("Offline Mode");
 
-      if (DEBUG) console.log("[Search] raw response:", raw);
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
 
-      const items = extractItems(raw).map(normalise);
-      setResults((prev) => (replace ? items : [...prev, ...items]));
-      setHasMore(raw.hasMore ?? false);
-      setNextCursor(raw.nextCursor ?? null);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Search failed");
-      setHasMore(false);
-    } finally {
+        const raw: RawApiResponse = await res.json();
+        const networkItems = extractItems(raw).map(normalise);
+
+        setResults((prev) => {
+          if (replace) {
+            // Merge network with offline, prioritized network
+            const merged = [...networkItems];
+            convertedOffline.forEach(off => {
+              const exists = merged.find(net => 
+                net.kind === off.kind && (net.id === off.id || net.communitySlug === off.communitySlug || net.hashtag === off.hashtag)
+              );
+              if (!exists) merged.push(off as NormResult);
+            });
+            return merged;
+          }
+          return [...prev, ...networkItems];
+        });
+        
+        setHasMore(raw.hasMore ?? false);
+        setNextCursor(raw.nextCursor ?? null);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Search failed";
+        // If we have some results already (from local cache), don't show a loud error
+        if (convertedOffline.length > 0) {
+          setError("Search offline — showing local results");
+        } else {
+          setError(msg === "Offline Mode" ? "Server unreachable — check your connection" : msg);
+        }
+        setHasMore(false);
+      } finally {
       setLoading(false);
       setInitialLoading(false);
     }
@@ -484,10 +517,8 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
         setShowDropdown(true);
       })
       .catch(() => {
-        // If offline, we just keep the offline items we already set
-        if (!navigator.onLine || convertedOffline.length > 0) {
-          setShowDropdown(true);
-        }
+        // Silent fallback for quick results
+        if (convertedOffline.length > 0) setShowDropdown(true);
       })
       .finally(() => setQuickLoading(false));
   }, [debouncedInput, open]);
