@@ -11,11 +11,18 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Search, X, Hash, Users, FileText, Loader2, AlertCircle, ChevronDown, ChevronUp,
+  Search, X, Hash, Users, FileText, Loader2, AlertCircle, ChevronDown, ChevronUp, RefreshCw,
 } from "lucide-react";
 import PostCard from "../post/PostCard";
 import { toPostCardPost } from "../../utils/postUtils";
 import { useCurrentUser } from "../../hooks/useUser";
+import { 
+  saveRecentSearch, 
+  getRecentSearches, 
+  cacheSuggestion, 
+  getOfflineSuggestions,
+} from "../../utils/searchCache";
+import type { CacheItem } from "../../utils/searchCache";
 
 // ─── Raw backend shape — defensive: accept every possible field name ──────────
 // SearchDto.Result fields (from SearchService builder calls):
@@ -278,45 +285,49 @@ function TypeaheadDropdown({
 
   return (
     <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-base-300 bg-base-100 shadow-xl overflow-hidden">
+      {results.length > 0 && (
+        <div className="max-h-60 overflow-y-auto">
+          {results.map((r, i) => {
+            if (r.kind === "HASHTAG")
+              return (
+                <button key={i} onClick={() => onSelect(`#${r.hashtag}`)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors">
+                  <Hash size={14} className="opacity-50" />
+                  <span className="font-medium">#{r.hashtag}</span>
+                  {r.postCount != null && <span className="ml-auto text-xs opacity-40">{r.postCount} posts</span>}
+                </button>
+              );
+
+            if (r.kind === "COMMUNITY")
+              return (
+                <button key={i} onClick={() => onSelect(r.communityName ?? "")}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors">
+                  <Users size={14} className="opacity-50" />
+                  <span className="font-medium">{r.communityName}</span>
+                  <span className="ml-auto text-xs opacity-40">community</span>
+                </button>
+              );
+
+            if (r.kind === "POST" || r.kind === "SOCIAL_POST") {
+              const content = r.postDto?.content as string | undefined;
+              return (
+                <button key={i} onClick={() => onSelect((content ?? "").slice(0, 60))}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors">
+                  <FileText size={14} className="opacity-50" />
+                  <span className="truncate opacity-80">{content}</span>
+                </button>
+              );
+            }
+
+            return null;
+          })}
+        </div>
+      )}
       {loading && (
-        <div className="flex items-center justify-center p-3 opacity-50">
+        <div className="flex items-center justify-center p-3 opacity-50 border-t border-base-300">
           <Loader2 size={16} className="animate-spin" />
         </div>
       )}
-      {results.map((r, i) => {
-        if (r.kind === "HASHTAG")
-          return (
-            <button key={i} onClick={() => onSelect(`#${r.hashtag}`)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors">
-              <Hash size={14} className="opacity-50" />
-              <span className="font-medium">#{r.hashtag}</span>
-              {r.postCount != null && <span className="ml-auto text-xs opacity-40">{r.postCount} posts</span>}
-            </button>
-          );
-
-        if (r.kind === "COMMUNITY")
-          return (
-            <button key={i} onClick={() => onSelect(r.communityName ?? "")}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors">
-              <Users size={14} className="opacity-50" />
-              <span className="font-medium">{r.communityName}</span>
-              <span className="ml-auto text-xs opacity-40">community</span>
-            </button>
-          );
-
-        if (r.kind === "POST" || r.kind === "SOCIAL_POST") {
-          const content = r.postDto?.content as string | undefined;
-          return (
-            <button key={i} onClick={() => onSelect((content ?? "").slice(0, 60))}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors">
-              <FileText size={14} className="opacity-50" />
-              <span className="truncate opacity-80">{content}</span>
-            </button>
-          );
-        }
-
-        return null;
-      })}
     </div>
   );
 }
@@ -403,6 +414,7 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
   const [inputValue, setInputValue] = useState(initialQuery);
   const [committedQuery, setCommittedQuery] = useState("");
   const [quickResults, setQuickResults] = useState<NormResult[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [quickLoading, setQuickLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -430,21 +442,62 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
 
   useEffect(() => {
     if (!debouncedInput.trim() || !open) {
-      setQuickResults([]); setShowDropdown(false); return;
+      setQuickResults([]); 
+      setShowDropdown(false); 
+      return;
     }
+
+    // 1. Check local cache immediately for offline / instant results
+    const offlineItems: CacheItem[] = getOfflineSuggestions(debouncedInput);
+    const convertedOffline: NormResult[] = offlineItems.map(item => ({
+      kind: item.kind,
+      id: typeof item.id === 'number' ? item.id : undefined,
+      communityName: item.kind === 'COMMUNITY' ? item.displayText : undefined,
+      communitySlug: item.slug,
+      communityAvatarUrl: item.avatarUrl || undefined,
+      hashtag: item.kind === 'HASHTAG' ? item.displayText.replace('#', '') : undefined,
+      postDto: item.kind === 'POST' || item.kind === 'SOCIAL_POST' ? { content: item.displayText } : undefined,
+      _raw: {} 
+    }));
+
+    setQuickResults(convertedOffline);
+    if (convertedOffline.length > 0) setShowDropdown(true);
+
+    // 2. Fetch from network
     setQuickLoading(true);
     fetch(`/api/search/quick?q=${encodeURIComponent(debouncedInput)}`, { headers: authHeaders() })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((raw: RawApiResponse) => {
-        setQuickResults(extractItems(raw).map(normalise));
+        const networkItems = extractItems(raw).map(normalise);
+        
+        // Merge network results with offline results, prioritizing network items
+        const merged = [...networkItems];
+        // Add offline items that aren't already in network results
+        convertedOffline.forEach(off => {
+          const exists = merged.find(net => 
+            net.kind === off.kind && (net.id === off.id || net.communitySlug === off.communitySlug || net.hashtag === off.hashtag)
+          );
+          if (!exists) merged.push(off);
+        });
+        
+        setQuickResults(merged);
         setShowDropdown(true);
       })
-      .catch(() => setQuickResults([]))
+      .catch(() => {
+        // If offline, we just keep the offline items we already set
+        if (!navigator.onLine || convertedOffline.length > 0) {
+          setShowDropdown(true);
+        }
+      })
       .finally(() => setQuickLoading(false));
   }, [debouncedInput, open]);
 
   const commitSearch = useCallback((q: string) => {
-    setInputValue(q); setCommittedQuery(q); setShowDropdown(false); inputRef.current?.blur();
+    saveRecentSearch(q);
+    setInputValue(q); 
+    setCommittedQuery(q); 
+    setShowDropdown(false); 
+    inputRef.current?.blur();
   }, []);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -453,9 +506,16 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
   };
 
   const handleInputFocus = () => {
-    // Only show dropdown for quick suggestions if NOT in full search mode
-    if (!committedQuery && quickResults.length > 0) {
-      setShowDropdown(true);
+    const historical = getRecentSearches();
+    setRecentSearches(historical);
+
+    if (!committedQuery) {
+      // If no input, show recent searches if they exist
+      if (!inputValue && historical.length > 0) {
+        setShowDropdown(true);
+      } else if (quickResults.length > 0) {
+        setShowDropdown(true);
+      }
     }
   };
 
@@ -497,7 +557,46 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
           <button onClick={onClose} className="btn btn-ghost btn-sm ml-1">Cancel</button>
 
           {showDropdown && !committedQuery && (
-            <TypeaheadDropdown results={quickResults} loading={quickLoading} onSelect={commitSearch} />
+            <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-base-300 bg-base-100 shadow-xl overflow-hidden flex flex-col">
+              {/* RECENT SEARCHES */}
+              {!inputValue && recentSearches.length > 0 && (
+                <div className="border-b border-base-300 bg-base-200/50 px-3 py-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">Recent Searches</span>
+                </div>
+              )}
+              {!inputValue && recentSearches.map((q, i) => (
+                <button key={`recent-${i}`} onClick={() => commitSearch(q)}
+                  className="flex w-full items-center gap-3 px-3 py-2.5 text-sm hover:bg-base-200 transition-colors group">
+                  <RefreshCw size={14} className="opacity-30 group-hover:opacity-60 transition-opacity" />
+                  <span className="font-medium opacity-70">{q}</span>
+                </button>
+              ))}
+
+              {/* AUTO-SUGGESTIONS */}
+              {inputValue && (
+                <TypeaheadDropdown 
+                  results={quickResults} 
+                  loading={quickLoading} 
+                  onSelect={(q) => {
+                    // Try to find if this selection corresponds to a specific community/top result to cache it
+                    const matched = quickResults.find(r => 
+                      r.communityName === q || `#${r.hashtag}` === q || (r.postDto?.content as string)?.startsWith(q)
+                    );
+                    if (matched) {
+                      cacheSuggestion({
+                        kind: matched.kind,
+                        id: matched.id,
+                        displayText: matched.communityName || (matched.hashtag ? `#${matched.hashtag}` : (matched.postDto?.content as string) || q),
+                        subText: matched.communityDescription,
+                        avatarUrl: matched.communityAvatarUrl,
+                        slug: matched.communitySlug
+                      });
+                    }
+                    commitSearch(q);
+                  }} 
+                />
+              )}
+            </div>
           )}
         </div>
 

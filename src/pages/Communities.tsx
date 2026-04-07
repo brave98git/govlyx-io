@@ -24,6 +24,7 @@ import PostSkeleton from "../components/post/PostSkeleton";
 import type { CurrentUser as CardUser } from "../components/post/PostCard";
 import { toPostCardPost } from "../utils/postUtils";
 import { jwtDecode } from "jwt-decode";
+import { cacheSuggestion } from "../utils/searchCache";
 
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -1791,6 +1792,18 @@ function DetailPanel({
         else if (joined) removePendingLocal(c.id);
         setC(p => ({ ...p, isMember: joined, hasPendingRequest: newHasPending, memberCount: joined ? p.memberCount + 1 : p.memberCount }));
         onMembershipChange(c.id, joined, joined ? 1 : 0, newHasPending);
+        
+        // Cache the community if we successfully joined it
+        if (joined) {
+          cacheSuggestion({
+            kind: 'COMMUNITY',
+            id: c.id,
+            displayText: c.name,
+            subText: c.description,
+            avatarUrl: c.avatarUrl || undefined,
+            slug: c.slug
+          });
+        }
       }
     } catch { alert("Action failed."); }
     finally { setActing(false); }
@@ -2022,6 +2035,18 @@ const Community = () => {
       const seen = new Set<number>(); const merged: CommunityData[] = [];
       for (const c of [...owned, ...joined]) { if (!seen.has(c.id)) { seen.add(c.id); merged.push(c); } }
       setMyCommunities(merged);
+
+      // Auto-sync joined communities to offline search cache
+      merged.forEach(item => {
+        cacheSuggestion({
+          kind: 'COMMUNITY',
+          id: item.id,
+          displayText: item.name,
+          subText: item.description,
+          avatarUrl: item.avatarUrl || undefined,
+          slug: item.slug
+        });
+      });
     } catch { setMyCommunities([]); }
     finally { setMyCommunitiesLoading(false); }
   }, []);

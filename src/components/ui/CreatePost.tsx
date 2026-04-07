@@ -913,11 +913,11 @@ const CreatePost = ({ open, onClose, communityId, communityName, onPostCreated }
             onClick={onClose}
           />
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            className="fixed inset-0 z-50 flex sm:items-center items-start justify-center px-4 pt-16 sm:pt-0"
             initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
           >
             <div
-              className="w-full max-w-lg rounded-2xl bg-base-200 border border-base-300 p-6 max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col gap-4"
+              className="w-full max-w-lg rounded-2xl bg-base-200 border border-base-300 p-6 max-h-[85dvh] overflow-y-auto shadow-2xl flex flex-col gap-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">

@@ -14,38 +14,36 @@ const MainLayout = () => {
       <input id="mobile-drawer" type="checkbox" className="drawer-toggle" />
 
       {/* MAIN CONTENT */}
-      <div className="drawer-content h-full min-h-screen overflow-hidden flex flex-col">
+      <div className="drawer-content h-[100dvh] overflow-hidden flex flex-col">
+        <Navbar />
+
         <motion.div
-          className="flex-1 flex flex-col bg-base-100 text-base-content relative"
+          className="flex-1 flex flex-col bg-base-100 text-base-content overflow-hidden relative"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
         >
-          {/* Navbar */}
-          <Navbar />
-
-          {/* This spacer pushes the content down below the fixed Navbar */}
-          <div className="h-[calc(3.5rem+env(safe-area-inset-top,0px))] shrink-0" />
-
           {/* Layout area BELOW navbar */}
           <div className="flex-1 overflow-hidden relative">
             <div className="mx-auto max-w-[1780px] px-4 h-full">
-              <div className="grid grid-cols-12 gap-4 mt-3 h-full">
+              <div className="grid grid-cols-12 gap-4 h-full">
 
                 {/* LEFT SIDEBAR */}
-                <aside className="hidden lg:block lg:col-span-3 h-full">
+                <aside className="hidden lg:block lg:col-span-3 h-full py-4">
                   <div className="h-full overflow-y-auto scrollbar-hide">
                     <SidebarLeft />
                   </div>
                 </aside>
 
                 {/* CENTER */}
-                <main className={`col-span-12 lg:col-span-9 xl:col-span-6 h-full ${location.pathname.includes("quick-chat") ? "overflow-hidden" : "overflow-y-auto"} scrollbar-hide`}>
-                  <Outlet />
+                <main className={`col-span-12 lg:col-span-9 xl:col-span-6 h-full pb-20 sm:pb-4 ${location.pathname.includes("quick-chat") ? "overflow-hidden" : "overflow-y-auto"} scrollbar-hide`}>
+                  <div className="pt-3">
+                    <Outlet />
+                  </div>
                 </main>
                 
                 {/* RIGHT SIDEBAR */}
-                <aside className="hidden xl:block xl:col-span-3 h-full">
+                <aside className="hidden xl:block xl:col-span-3 h-full py-4">
                   <div className="h-full overflow-y-auto scrollbar-hide">
                     <SidebarRight />
                   </div>
