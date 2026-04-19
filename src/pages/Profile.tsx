@@ -11,6 +11,7 @@ import PostSkeleton from "../components/post/PostSkeleton";
 import type { AnyPost, CurrentUser } from "../components/post/PostCard";
 import { useCurrentUser } from "../hooks/useUser";
 import { toPostCardPost, resolveMediaUrl } from "../utils/postUtils";
+import { apiUrl } from "../utils/apiUrl";
 
 // ─── auth helpers ─────────────────────────────────────────────────────────────
 function authHeaders(): HeadersInit {
@@ -22,7 +23,7 @@ function authHeaders(): HeadersInit {
 }
 
 async function apiFetch(url: string) {
-  const res = await fetch(url, { headers: authHeaders() });
+  const res = await fetch(apiUrl(url), { headers: authHeaders() });
   if (!res.ok) throw new Error(`${url} → ${res.status}`);
   return res.json();
 }

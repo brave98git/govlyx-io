@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { apiUrl } from "../../utils/apiUrl";
 
 // ─── auth helpers ─────────────────────────────────────────────────────────────
 function authHeaders(): HeadersInit {
@@ -27,14 +28,14 @@ function authHeaders(): HeadersInit {
 }
 
 async function apiFetch(url: string) {
-  const res = await fetch(url, { headers: authHeaders() });
+  const res = await fetch(apiUrl(url), { headers: authHeaders() });
   if (!res.ok) throw new Error(`${res.status}`);
   const data = await res.json();
   return data?.data ?? data;
 }
 
 async function apiPost(url: string, body: unknown) {
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify(body),
@@ -57,7 +58,7 @@ async function apiPost(url: string, body: unknown) {
 }
 
 async function apiPut(url: string, body: unknown) {
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "PUT",
     headers: authHeaders(),
     body: JSON.stringify(body),
@@ -80,7 +81,7 @@ async function apiPut(url: string, body: unknown) {
 }
 
 async function apiDelete(url: string) {
-  const res = await fetch(url, { method: "DELETE", headers: authHeaders() });
+  const res = await fetch(apiUrl(url), { method: "DELETE", headers: authHeaders() });
   if (!res.ok) throw new Error(`${res.status}`);
 }
 

@@ -50,7 +50,7 @@ interface ApiResult {
  * Civic / Issue Post — POST /api/posts
  */
 async function apiCreatePost(content: string, targetPincode: string): Promise<ApiResult> {
-  const res = await fetch(`/api/posts`, {
+  const res = await fetch(apiUrl(`/api/posts`), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({
@@ -77,7 +77,7 @@ async function apiCreatePostWithMedia(
   form.append("targetPincode", targetPincode);
   form.append("media", mediaFile);
 
-  const res = await fetch(`/api/posts/with-media`, {
+  const res = await fetch(apiUrl(`/api/posts/with-media`), {
     method: "POST",
     headers: { ...authHeaders() },
     body: form,
@@ -91,7 +91,7 @@ async function apiCreatePostWithMedia(
  * Social Post (text-only) — POST /api/social-posts/text
  */
 async function apiCreateSocialPost(content: string, communityId?: number): Promise<ApiResult> {
-  const res = await fetch(`/api/social-posts/text`, {
+  const res = await fetch(apiUrl(`/api/social-posts/text`), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ content, allowComments: true, communityId }),
@@ -118,7 +118,7 @@ async function apiCreateSocialPostWithMedia(
   );
   files.forEach((f) => form.append("media", f));
 
-  const res = await fetch(`/api/social-posts/with-media`, {
+  const res = await fetch(apiUrl(`/api/social-posts/with-media`), {
     method: "POST",
     headers: { ...authHeaders() },
     body: form,
@@ -139,7 +139,7 @@ async function apiCreatePoll(payload: {
   showResultsBeforeExpiry?: boolean;
   communityId?: number;
 }): Promise<ApiResult> {
-  const res = await fetch(`/api/polls/create`, {
+  const res = await fetch(apiUrl(`/api/polls/create`), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload),
@@ -369,7 +369,7 @@ function PostForm({
     console.log("[Mentions] Fetching for:", q, "isReporting:", isReportingIssue);
     setMentionLoading(true);
     try {
-      const res = await fetch(`/api/user-tagging/suggestions?query=${encodeURIComponent(q)}&limit=5`, {
+      const res = await fetch(apiUrl(`/api/user-tagging/suggestions?query=${encodeURIComponent(q)}&limit=5`), {
         headers: authHeaders(),
       });
       if (!res.ok) {
@@ -702,7 +702,7 @@ function PollForm({
     console.log("[Poll Mentions] Fetching for:", q);
     setMentionLoading(true);
     try {
-      const res = await fetch(`/api/user-tagging/suggestions?query=${encodeURIComponent(q)}&limit=5`, {
+      const res = await fetch(apiUrl(`/api/user-tagging/suggestions?query=${encodeURIComponent(q)}&limit=5`), {
         headers: authHeaders(),
       });
       if (!res.ok) {

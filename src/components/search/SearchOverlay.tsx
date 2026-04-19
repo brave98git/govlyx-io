@@ -23,6 +23,7 @@ import {
   getOfflineSuggestions,
 } from "../../utils/searchCache";
 import type { CacheItem } from "../../utils/searchCache";
+import { apiUrl } from "../../utils/apiUrl";
 
 // ─── Raw backend shape — defensive: accept every possible field name ──────────
 // SearchDto.Result fields (from SearchService builder calls):
@@ -180,25 +181,29 @@ function CommunityCard({ r }: { r: NormResult }) {
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    // Convert search result to community data
-    const communityData = {
-      id: r.id || 0,
-      name: r.communityName || "Unnamed",
-      slug: r.communitySlug || `${r.id}`,
-      description: r.communityDescription || "",
-      category: null,
-      tags: null,
-      avatarUrl: r.communityAvatarUrl || null,
-      coverImageUrl: null,
-      privacy: "PUBLIC" as const,
-      locationName: r.locationName || null,
-      memberCount: r.memberCount || 0,
-      postCount: 0,
-      isMember: false,
-      isOwner: false,
-      createdAt: new Date().toISOString(),
-    };
-    navigate("/communities", { state: { selectedCommunity: communityData } });
+    // Navigate directly to the community via URL slug/id — Communities page reads useParams
+    const slug = r.communitySlug || String(r.id || "");
+    navigate(`/communities/${slug}`, {
+      state: {
+        selectedCommunity: {
+          id: r.id || 0,
+          name: r.communityName || "Unnamed",
+          slug,
+          description: r.communityDescription || "",
+          category: null,
+          tags: null,
+          avatarUrl: r.communityAvatarUrl || null,
+          coverImageUrl: null,
+          privacy: "PUBLIC" as const,
+          locationName: r.locationName || null,
+          memberCount: r.memberCount || 0,
+          postCount: 0,
+          isMember: false,
+          isOwner: false,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
   };
 
   return (
@@ -241,11 +246,12 @@ function CommunityCard({ r }: { r: NormResult }) {
 }
 
 function HashtagCard({ r }: { r: NormResult }) {
+  const navigate = useNavigate();
   return (
     <div>
-      <a
-        href={`/tag/${r.hashtag ?? ""}`}
-        className="flex items-center gap-3 rounded-xl border border-base-300 bg-base-100 p-3 hover:bg-base-200 transition-colors"
+      <button
+        onClick={() => navigate("/communities", { state: { searchQuery: r.hashtag ?? "" } })}
+        className="flex w-full items-center gap-3 rounded-xl border border-base-300 bg-base-100 p-3 hover:bg-base-200 transition-colors text-left"
       >
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10">
           <Hash size={18} className="text-secondary" />
@@ -256,7 +262,7 @@ function HashtagCard({ r }: { r: NormResult }) {
             <p className="text-xs opacity-50">{Number(r.postCount).toLocaleString()} posts</p>
           )}
         </div>
-      </a>
+      </button>
       {DEBUG && <DebugPanel raw={r._raw} />}
     </div>
   );
@@ -281,7 +287,9 @@ function TypeaheadDropdown({
   loading: boolean;
   onSelect: (q: string) => void;
 }) {
+  const navigate = useNavigate();
   if (!loading && results.length === 0) return null;
+
 
   return (
     <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-base-300 bg-base-100 shadow-xl overflow-hidden">
@@ -300,7 +308,12 @@ function TypeaheadDropdown({
 
             if (r.kind === "COMMUNITY")
               return (
-                <button key={i} onClick={() => onSelect(r.communityName ?? "")}
+                <button key={i} onClick={() => {
+                    const slug = r.communitySlug || String(r.id ?? "");
+                    navigate(`/communities/${slug}`, {
+                      state: { selectedCommunity: { id: r.id, name: r.communityName, slug, avatarUrl: r.communityAvatarUrl } }
+                    });
+                  }}
                   className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors">
                   <Users size={14} className="opacity-50" />
                   <span className="font-medium">{r.communityName}</span>
@@ -310,8 +323,13 @@ function TypeaheadDropdown({
 
             if (r.kind === "POST" || r.kind === "SOCIAL_POST") {
               const content = r.postDto?.content as string | undefined;
+              const postId = r.id;
               return (
-                <button key={i} onClick={() => onSelect((content ?? "").slice(0, 60))}
+                <button key={i}
+                  onClick={() => {
+                    if (postId) navigate(`/post/${postId}`);
+                    else onSelect((content ?? "").slice(0, 60));
+                  }}
                   className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors">
                   <FileText size={14} className="opacity-50" />
                   <span className="truncate opacity-80">{content}</span>
@@ -374,7 +392,7 @@ function useFullSearch(committedQuery: string) {
         const params = new URLSearchParams({ q, limit: "20" });
         if (cursor !== null) params.set("cursor", String(cursor));
 
-        const res = await fetch(`/api/search?${params}`, { headers: authHeaders() });
+        const res = await fetch(apiUrl(`/api/search?${params}`), { headers: authHeaders() });
 
         if (res.status === 401 || res.status === 403) throw new Error("Please log in to see more.");
 
@@ -498,7 +516,7 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
 
     // 2. Fetch from network
     setQuickLoading(true);
-    fetch(`/api/search/quick?q=${encodeURIComponent(debouncedInput)}`, { headers: authHeaders() })
+    fetch(apiUrl(`/api/search/quick?q=${encodeURIComponent(debouncedInput)}`), { headers: authHeaders() })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((raw: RawApiResponse) => {
         const networkItems = extractItems(raw).map(normalise);
@@ -702,16 +720,22 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
                 {postResults.map((r, i) => {
                   if (!r.postDto) return DEBUG ? <DebugPanel key={i} raw={r._raw} /> : null;
                   const post = toPostCardPost(r.postDto);
+                  const postId = r.id ?? post.id;
                   return (
-                    <PostCard
+                    <div
                       key={`${r.kind}-${r.id ?? i}`}
-                      post={post}
-                      currentUser={currentUser}
-                      onLike={(id: number, liked: boolean) => console.log("like", id, liked)}
-                      onSave={(id: number, saved: boolean) => console.log("save", id, saved)}
-                      onShare={(id: number) => navigator.clipboard?.writeText(`${window.location.origin}/post/${id}`).catch(() => { })}
-                      onComment={(id: number) => { window.location.href = `/post/${id}`; }}
-                    />
+                      className="cursor-pointer"
+                      onClick={() => { if (postId) { onClose(); navigate(`/post/${postId}`); } }}
+                    >
+                      <PostCard
+                        post={post}
+                        currentUser={currentUser}
+                        onLike={(id: number, liked: boolean) => console.log("like", id, liked)}
+                        onSave={(id: number, saved: boolean) => console.log("save", id, saved)}
+                        onShare={(id: number) => navigator.clipboard?.writeText(`${window.location.origin}/post/${id}`).catch(() => { })}
+                        onComment={(id: number) => { onClose(); navigate(`/post/${id}`); }}
+                      />
+                    </div>
                   );
                 })}
               </div>

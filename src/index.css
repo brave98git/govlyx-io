@@ -16,6 +16,14 @@
   --font-sans: 'Satoshi', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* ── Override DaisyUI v5 primary to match app brand (#1D4ED8) ─────────────────
+   DaisyUI 5 uses oklch CSS vars that load after @theme, overriding our primary.
+   We re-assert it here so bg-primary / text-primary / border-primary all match. */
+:root, [data-theme] {
+  --color-primary: oklch(45.2% 0.274 264.1); /* #1D4ED8 in oklch */
+  --color-primary-content: oklch(100% 0 0);  /* white */
+}
+
 @layer utilities {
   .hide-scrollbar {
     -ms-overflow-style: none; /* IE and Edge */

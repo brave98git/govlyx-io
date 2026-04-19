@@ -25,6 +25,7 @@ import {
   getBroadcastAnalytics,
   getBroadcastStatistics,
 } from "../api/departmentService";
+import { apiUrl } from "../utils/apiUrl";
 import type {
   DashboardTab,
   IssueFilter,
@@ -42,7 +43,7 @@ function useCurrentUser() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("/api/users/me", {
+    fetch(apiUrl("/api/users/me"), {
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     })
       .then((r) => (r.ok ? r.json() : Promise.reject()))

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { FiSearch } from "react-icons/fi";
 import { HiOutlineArrowRight } from "react-icons/hi";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Building2, Construction, GraduationCap, Stethoscope, Leaf,
   Laptop, Trophy, Palette, Briefcase, HardHat, ShieldCheck,
@@ -25,6 +25,7 @@ import type { CurrentUser as CardUser } from "../components/post/PostCard";
 import { toPostCardPost } from "../utils/postUtils";
 import { jwtDecode } from "jwt-decode";
 import { cacheSuggestion } from "../utils/searchCache";
+import { apiUrl } from "../utils/apiUrl";
 
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -314,7 +315,7 @@ function InviteTab({
     debRef.current = setTimeout(async () => {
       setSugLoading(true);
       try {
-        const res = await fetch(`/api/users/search?query=${encodeURIComponent(q)}&limit=5`, { headers: hdrs() });
+        const res = await fetch(apiUrl(`/api/users/search?query=${encodeURIComponent(q)}&limit=5`), { headers: hdrs() });
         if (!res.ok) throw new Error();
         const d = await res.json();
         const list: UserSearchResult[] = d?.data?.data ?? d?.data ?? d?.content ?? [];
@@ -329,7 +330,7 @@ function InviteTab({
     if (!selectedUser) return;
     setSending(true); setSendError(null); setSendResult(null);
     try {
-      const res = await fetch(`/api/communities/${communityId}/invites`, {
+      const res = await fetch(apiUrl(`/api/communities/${communityId}/invites`), {
         method: "POST",
         headers: hdrs(),
         body: JSON.stringify({
@@ -354,7 +355,7 @@ function InviteTab({
   async function handleGenerateLink() {
     setGenLoading(true); setGenResult(null);
     try {
-      const res = await fetch(`/api/communities/${communityId}/invites`, {
+      const res = await fetch(apiUrl(`/api/communities/${communityId}/invites`), {
         method: "POST",
         headers: hdrs(),
         body: JSON.stringify({}),
@@ -374,7 +375,7 @@ function InviteTab({
     try {
       const p = new URLSearchParams({ limit: "20" });
       if (cur) p.set("cursor", String(cur));
-      const res = await fetch(`/api/communities/${communityId}/invites?${p}`, { headers: hdrs() });
+      const res = await fetch(apiUrl(`/api/communities/${communityId}/invites?${p}`), { headers: hdrs() });
       if (!res.ok) throw new Error();
       const d = await res.json();
       const paged = d?.data;
@@ -397,7 +398,7 @@ function InviteTab({
     if (!window.confirm("Revoke this invite?")) return;
     setRevoking(inviteId);
     try {
-      const res = await fetch(`/api/communities/${communityId}/invites/${inviteId}`, {
+      const res = await fetch(apiUrl(`/api/communities/${communityId}/invites/${inviteId}`), {
         method: "DELETE", headers: hdrs(),
       });
       if (!res.ok) { alert("Could not revoke."); return; }
@@ -781,7 +782,7 @@ export function AcceptInvitePage() {
     if (!token) { setPreviewLoading(false); return; }
     (async () => {
       try {
-        const res = await fetch(`/api/communities/invites/preview/${token}`);
+        const res = await fetch(apiUrl(`/api/communities/invites/preview/${token}`));
         const d = await res.json().catch(() => ({}));
         if (res.status === 404) {
           setErrorMsg(d?.error || d?.message || "This invite link is invalid or has expired.");
@@ -811,7 +812,7 @@ export function AcceptInvitePage() {
     }
     setStatus("loading");
     try {
-      const res = await fetch(`/api/communities/invites/accept/${token}`, {
+      const res = await fetch(apiUrl(`/api/communities/invites/accept/${token}`), {
         method: "POST",
         headers: hdrs(),
         body: JSON.stringify({}),
@@ -979,7 +980,7 @@ function AdminPanel({
     try {
       const p = new URLSearchParams({ limit: "20" });
       if (cur) p.set("cursor", String(cur));
-      const res = await fetch(`/api/communities/${c.id}/join-requests?${p}`, { headers: hdrs() });
+      const res = await fetch(apiUrl(`/api/communities/${c.id}/join-requests?${p}`), { headers: hdrs() });
       if (!res.ok) throw new Error();
       const d = await res.json();
       const paged = d?.data ?? d;
@@ -1044,7 +1045,7 @@ function AdminPanel({
     try {
       const p = new URLSearchParams({ limit: "30" });
       if (cur) p.set("cursor", String(cur));
-      const res = await fetch(`/api/communities/${c.id}/members?${p}`, { headers: hdrs() });
+      const res = await fetch(apiUrl(`/api/communities/${c.id}/members?${p}`), { headers: hdrs() });
       if (!res.ok) throw new Error();
       const d = await res.json();
       const paged = d?.data ?? d;
@@ -1074,19 +1075,19 @@ function AdminPanel({
       let res: Response;
       if (action === "remove") {
         if (!confirm("Remove this member from the community?")) return;
-        res = await fetch(`/api/communities/${c.id}/members/${userId}`, { method: "DELETE", headers: hdrs() });
+        res = await fetch(apiUrl(`/api/communities/${c.id}/members/${userId}`), { method: "DELETE", headers: hdrs() });
       } else if (action === "mute") {
-        res = await fetch(`/api/communities/${c.id}/members/${userId}/mute`, { method: "PUT", headers: hdrs() });
+        res = await fetch(apiUrl(`/api/communities/${c.id}/members/${userId}/mute`), { method: "PUT", headers: hdrs() });
       } else if (action === "unmute") {
-        res = await fetch(`/api/communities/${c.id}/members/${userId}/mute`, { method: "DELETE", headers: hdrs() });
+        res = await fetch(apiUrl(`/api/communities/${c.id}/members/${userId}/mute`), { method: "DELETE", headers: hdrs() });
       } else if (action === "ban") {
         if (!confirm("Ban this member?")) return;
-        res = await fetch(`/api/communities/${c.id}/members/${userId}/ban`, { method: "PUT", headers: hdrs(), body: JSON.stringify({}) });
+        res = await fetch(apiUrl(`/api/communities/${c.id}/members/${userId}/ban`), { method: "PUT", headers: hdrs(), body: JSON.stringify({}) });
       } else if (action === "unban") {
-        res = await fetch(`/api/communities/${c.id}/members/${userId}/ban`, { method: "DELETE", headers: hdrs() });
+        res = await fetch(apiUrl(`/api/communities/${c.id}/members/${userId}/ban`), { method: "DELETE", headers: hdrs() });
       } else {
         const roleMap = { makeAdmin: "ADMIN", makeMod: "MODERATOR", makeMember: "MEMBER" };
-        res = await fetch(`/api/communities/${c.id}/members/${userId}/role`, {
+        res = await fetch(apiUrl(`/api/communities/${c.id}/members/${userId}/role`), {
           method: "PUT", headers: hdrs(),
           body: JSON.stringify({ role: roleMap[action as keyof typeof roleMap] }),
         });
@@ -1130,7 +1131,7 @@ function AdminPanel({
   async function saveSettings() {
     setSettingsBusy(true); setSettingsMsg(null);
     try {
-      const res = await fetch(`/api/communities/${c.id}`, {
+      const res = await fetch(apiUrl(`/api/communities/${c.id}`), {
         method: "PUT", headers: hdrs(), body: JSON.stringify(settingsForm),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setSettingsMsg("❌ " + (d?.message || "Save failed.")); return; }
@@ -1147,7 +1148,7 @@ function AdminPanel({
     if (!confirm(`Archive "${c.name}"? This cannot be undone easily.`)) return;
     setArchiveBusy(true);
     try {
-      const res = await fetch(`/api/communities/${c.id}/archive`, { method: "DELETE", headers: hdrs() });
+      const res = await fetch(apiUrl(`/api/communities/${c.id}/archive`), { method: "DELETE", headers: hdrs() });
       if (!res.ok) { alert("Archive failed."); return; }
       alert("Community archived."); onClose();
     } catch { alert("Server unreachable. Please check your connection."); }
@@ -1161,7 +1162,7 @@ function AdminPanel({
   const loadInsights = useCallback(async () => {
     setInsightsLoading(true);
     try {
-      const res = await fetch(`/api/communities/${c.id}/insights`, { headers: hdrs() });
+      const res = await fetch(apiUrl(`/api/communities/${c.id}/insights`), { headers: hdrs() });
       if (!res.ok) throw new Error();
       const d = await res.json();
       setInsights(d?.data ?? d);
@@ -1172,7 +1173,7 @@ function AdminPanel({
   async function triggerRecalc() {
     setRecalcBusy(true);
     try {
-      await fetch(`/api/communities/${c.id}/health/recalculate`, { method: "POST", headers: hdrs() });
+      await fetch(apiUrl(`/api/communities/${c.id}/health/recalculate`), { method: "POST", headers: hdrs() });
       setTimeout(() => loadInsights(), 1500);
     } catch { }
     finally { setRecalcBusy(false); }
@@ -1511,7 +1512,7 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
   async function submit() {
     setBusy(true); setErr(null);
     try {
-      const res = await fetch("/api/communities", {
+      const res = await fetch(apiUrl("/api/communities"), {
         method: "POST", headers: hdrs(),
         body: JSON.stringify({
           name: form.name.trim(), description: form.description.trim(),
@@ -1707,7 +1708,7 @@ function DetailPanel({
     let active = true;
     (async () => {
       try {
-        const res = await fetch(`/api/communities/${community.slug}`, { headers: hdrs() });
+        const res = await fetch(apiUrl(`/api/communities/${community.slug}`), { headers: hdrs() });
         if (!res.ok) return;
         const d = await res.json();
         const detail = d?.data ?? d;
@@ -1777,17 +1778,17 @@ function DetailPanel({
     try {
       if (c.isMember) {
         if (!window.confirm(`Leave "${c.name}"?`)) return;
-        const res = await fetch(`/api/communities/${c.id}/leave`, { method: "DELETE", headers: hdrs() });
+        const res = await fetch(apiUrl(`/api/communities/${c.id}/leave`), { method: "DELETE", headers: hdrs() });
         if (!res.ok) { alert((await res.json().catch(() => ({}))).message || "Could not leave."); return; }
         setC(p => ({ ...p, isMember: false, memberCount: p.memberCount - 1 }));
         onMembershipChange(c.id, false, -1);
       } else if (c.hasPendingRequest) {
-        await fetch(`/api/communities/${c.id}/join-requests/me`, { method: "DELETE", headers: hdrs() });
+        await fetch(apiUrl(`/api/communities/${c.id}/join-requests/me`), { method: "DELETE", headers: hdrs() });
         removePendingLocal(c.id);
         setC(p => ({ ...p, hasPendingRequest: false }));
         onMembershipChange(c.id, false, 0, false);
       } else {
-        const res = await fetch(`/api/communities/${c.id}/join`, { method: "POST", headers: hdrs(), body: JSON.stringify({}) });
+        const res = await fetch(apiUrl(`/api/communities/${c.id}/join`), { method: "POST", headers: hdrs(), body: JSON.stringify({}) });
         if (res.status === 401) { alert("Please log in."); return; }
         const d = await res.json(); const joined = d?.data?.joined ?? false;
         const newHasPending = !joined && String(c.privacy).toUpperCase() === "PRIVATE";
@@ -2001,6 +2002,9 @@ const Community = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [view, setView] = useState<"default" | "joined" | "owned">("default");
 
+  const { id: slugParam } = useParams<{ id?: string }>();
+  const location = useLocation();
+
   const inputRef = useRef<HTMLInputElement>(null);
   const quickDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -2008,8 +2012,8 @@ const Community = () => {
     setMyCommunitiesLoading(true);
     try {
       const [joinedRes, ownedRes] = await Promise.allSettled([
-        fetch("/api/communities/me?limit=100", { headers: hdrs() }),
-        fetch("/api/communities/owned", { headers: hdrs() }),
+        fetch(apiUrl("/api/communities/me?limit=100"), { headers: hdrs() }),
+        fetch(apiUrl("/api/communities/owned"), { headers: hdrs() }),
       ]);
       let joined: CommunityData[] = [];
       if (joinedRes.status === "fulfilled" && joinedRes.value.ok) {
@@ -2056,13 +2060,43 @@ const Community = () => {
 
   useEffect(() => { fetchMyCommunities(); }, [fetchMyCommunities]);
 
+  // ── Auto-select community from URL /:slug or search navigation state ──────────
+  useEffect(() => {
+    const navState = (location.state ?? {}) as { selectedCommunity?: any; searchQuery?: string };
+
+    // If navigated with a pre-built community object (from search overlay), select immediately
+    if (navState.selectedCommunity) {
+      setSelected(navState.selectedCommunity);
+      window.history.replaceState({}, ""); // clear state so back nav doesn't re-trigger
+      return;
+    }
+
+    // If routed to /communities/:slug, fetch and open that community
+    if (slugParam) {
+      fetch(apiUrl(`/api/communities/${slugParam}`), { headers: hdrs() })
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(d => { const c = d?.data ?? d; if (c?.id) setSelected(c); })
+        .catch(() => { /* slug not found — stay on list view */ });
+    }
+
+    // If navigated with a hashtag search query (from HashtagCard)
+    if (navState.searchQuery) {
+      setQuery(navState.searchQuery);
+      setCommitted(navState.searchQuery);
+      doSearch(navState.searchQuery, null, true);
+      window.history.replaceState({}, "");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slugParam]);
+
+
   useEffect(() => {
     if (quickDebounceRef.current) clearTimeout(quickDebounceRef.current);
     const q = query.trim();
     if (q.length < 2) { setSuggestions([]); return; }
     quickDebounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search/quick?q=${encodeURIComponent(q)}`, { headers: hdrs() });
+        const res = await fetch(apiUrl(`/api/search/quick?q=${encodeURIComponent(q)}`), { headers: hdrs() });
         if (!res.ok) return;
         const d = await res.json();
         const allHits: any[] = Array.isArray(d?.data) ? d.data : Array.isArray(d?.data?.data) ? d.data.data : d?.content ?? [];
@@ -2091,7 +2125,7 @@ const Community = () => {
     try {
       const p = new URLSearchParams({ q, type: "COMMUNITY", limit: "20" });
       if (cur !== null) p.set("cursor", String(cur));
-      const res = await fetch(`/api/search/type?${p}`, { headers: hdrs() });
+      const res = await fetch(apiUrl(`/api/search/type?${p}`), { headers: hdrs() });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const d = await res.json();
       const paged = d?.hasMore !== undefined ? d : (d?.data ?? d);

@@ -27,13 +27,14 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CommentSection from "./CommentSection";
+import { apiUrl } from "../../utils/apiUrl";
 import type { PostType } from "./CommentSection";
 import { resolveMediaUrl, toPostCardPost } from "../../utils/postUtils";
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 async function apiFetch(url: string, method: string, body?: unknown): Promise<unknown> {
   const token = localStorage.getItem("authToken") ?? localStorage.getItem("token");
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method,
     headers: {
       ...(body ? { "Content-Type": "application/json" } : {}),
