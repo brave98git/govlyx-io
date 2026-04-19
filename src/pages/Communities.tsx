@@ -1530,51 +1530,51 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70" onClick={onClose}>
-      <div className="w-full sm:max-w-md bg-base-100 rounded-t-3xl sm:rounded-2xl border border-base-300 shadow-2xl max-h-[92vh] flex flex-col" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-transparent backdrop-blur-xl p-0 sm:p-4" onClick={onClose}>
+      <div className="w-full sm:max-w-md bg-base-100/80 rounded-t-[2.5rem] sm:rounded-[2rem] border border-white/20 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] max-h-[94vh] flex flex-col overflow-hidden backdrop-blur-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 sm:hidden"><div className="w-10 h-1 rounded-full bg-base-300" /></div>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-base-300 shrink-0">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-base-content/5 shrink-0">
           <div>
-            <h2 className="font-bold text-base flex items-center gap-2">
-              <Plus size={18} className="text-blue-700" /> Create Community
+            <h2 className="font-black text-lg uppercase tracking-tight flex items-center gap-2">
+              <Plus size={16} className="text-blue-700" /> Community
             </h2>
-            <div className="flex gap-1 mt-1.5">
-              {[1, 2].map(s => <div key={s} className={`h-1 w-8 rounded-full transition-all ${step >= s ? "bg-blue-700" : "bg-base-300"}`} />)}
+            <div className="flex gap-1 mt-2">
+              {[1, 2].map(s => <div key={s} className={`h-1 w-6 rounded-full transition-all duration-500 ${step >= s ? "bg-blue-700 w-10" : "bg-base-300"}`} />)}
             </div>
           </div>
-          <button onClick={onClose} className="btn btn-ghost btn-circle btn-sm"><X size={18} /></button>
+          <button onClick={onClose} className="btn btn-ghost btn-circle btn-xs bg-base-300/50"><X size={16} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {err && <div className="bg-error/10 border border-error/30 text-error text-sm rounded-xl px-4 py-2 flex items-center gap-2"><AlertTriangle size={16} /> {err}</div>}
           {step === 1 && (
             <>
               <div>
-                <label className="block text-sm font-semibold mb-1">Name <span className="text-error">*</span></label>
-                <input autoFocus className="input input-bordered w-full" placeholder="e.g. Pune Cyclists Club" maxLength={60}
+                <label className="block text-[10px] uppercase font-black tracking-widest text-base-content/50 mb-1">Name <span className="text-error">*</span></label>
+                <input autoFocus className="input input-bordered input-sm w-full rounded-xl font-medium" placeholder="e.g. Pune Cyclists Club" maxLength={60}
                   value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-                <p className="text-xs opacity-40 mt-1">{form.name.length}/60 · min 3</p>
+                <p className="text-[9px] font-bold opacity-30 mt-1 uppercase tracking-tighter">{form.name.length}/60 · min 3</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Image URL <span className="opacity-40 font-normal">(optional)</span></label>
-                <input className="input input-bordered w-full" placeholder="https://..."
+                <label className="block text-[10px] uppercase font-black tracking-widest text-base-content/50 mb-1">Image URL <span className="opacity-40 font-normal">(optional)</span></label>
+                <input className="input input-bordered input-sm w-full rounded-xl" placeholder="https://..."
                   value={form.avatarUrl} onChange={e => setForm(f => ({ ...f, avatarUrl: e.target.value }))} />
-                <p className="text-xs opacity-50 mt-1 text-blue-700">If left blank, a random robot avatar will be assigned.</p>
+                <p className="text-[9px] font-bold opacity-40 mt-1 text-blue-700 uppercase tracking-tighter italic">Random robot avatar if blank</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Description <span className="text-error">*</span></label>
-                <textarea className="textarea textarea-bordered w-full resize-none" rows={3} maxLength={500}
+                <label className="block text-[10px] uppercase font-black tracking-widest text-base-content/50 mb-1">Description <span className="text-error">*</span></label>
+                <textarea className="textarea textarea-bordered transition-all focus:textarea-primary w-full resize-none text-sm rounded-xl min-h-[80px]" rows={3} maxLength={500}
                   placeholder="What's this community about?"
                   value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-                <p className="text-xs opacity-40 mt-1">{form.description.length}/500</p>
+                <p className="text-[9px] font-bold opacity-30 mt-1 uppercase tracking-tighter">{form.description.length}/500</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-2">Category</label>
+                <label className="block text-[10px] uppercase font-black tracking-widest text-base-content/50 mb-2">Category</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {CATS.map(cat => (
                     <button key={cat} type="button" onClick={() => setForm(f => ({ ...f, category: cat }))}
-                      className={`rounded-xl border py-2 px-1 text-center text-xs transition-all ${form.category === cat ? "border-blue-700 bg-blue-700/15 text-blue-700 font-semibold" : "border-base-300 hover:border-base-400 opacity-70"}`}>
-                      <div className="text-lg mb-0.5">{CAT_ICON[cat]}</div>
-                      <div className="leading-tight">{cat.replace(/_/g, " ")}</div>
+                      className={`rounded-xl border py-2 px-1 text-center transition-all duration-300 ${form.category === cat ? "border-blue-700 bg-blue-700/15 text-blue-700 scale-[1.02] shadow-sm" : "border-base-300 hover:border-base-400 opacity-60"}`}>
+                      <div className="text-base mb-0.5">{CAT_ICON[cat]}</div>
+                      <div className="text-[9px] font-black uppercase tracking-tighter leading-none">{cat.replace(/_/g, " ")}</div>
                     </button>
                   ))}
                 </div>
@@ -1588,32 +1588,35 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
                 <div className="space-y-2">
                   {(["PUBLIC", "PRIVATE", "SECRET"] as const).map(p => (
                     <button key={p} type="button" onClick={() => setForm(f => ({ ...f, privacy: p }))}
-                      className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${form.privacy === p ? "border-blue-700 bg-blue-700/10" : "border-base-300 hover:border-base-400"}`}>
-                      <span className="text-2xl">{PRIV_ICON[p]}</span>
+                      className={`w-full flex items-center gap-3 rounded-xl border p-2.5 text-left transition-all ${form.privacy === p ? "border-blue-700 bg-blue-700/5 shadow-sm scale-[1.01]" : "border-base-content/5 hover:border-base-content/10"}`}>
+                      <span className="text-xl opacity-60">{PRIV_ICON[p]}</span>
                       <div className="flex-1">
-                        <p className={`text-sm font-semibold ${form.privacy === p ? "text-blue-700" : ""}`}>{p.charAt(0) + p.slice(1).toLowerCase()}</p>
-                        <p className="text-xs opacity-50">{PRIV_DESC[p]}</p>
+                        <p className={`text-[11px] font-black uppercase tracking-tight ${form.privacy === p ? "text-blue-700" : "text-base-content/80"}`}>{p}</p>
+                        <p className="text-[9px] font-medium opacity-40 uppercase tracking-tighter leading-none">{PRIV_DESC[p]}</p>
                       </div>
-                      {form.privacy === p && <span className="text-blue-700 font-bold">✓</span>}
+                      {form.privacy === p && <span className="text-blue-700 text-xs shadow-sm">✓</span>}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Tags <span className="opacity-40 font-normal">(optional, comma-separated)</span></label>
-                <input className="input input-bordered w-full text-sm" placeholder="civic, roads, water"
+                <label className="block text-[10px] uppercase font-black tracking-widest text-base-content/50 mb-1">Tags <span className="opacity-40 font-normal">(optional)</span></label>
+                <input className="input input-bordered input-sm w-full rounded-xl" placeholder="civic, roads, water"
                   value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} />
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold">Settings</label>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] uppercase font-black tracking-widest text-base-content/50 mb-1">Settings</label>
                 {[
-                  { key: "allowMemberPosts", label: "Members can post", desc: "Anyone in community can create posts" },
-                  { key: "requirePostApproval", label: "Require post approval", desc: "Moderator reviews before publishing" },
-                  { key: "locationRestricted", label: "Location restricted", desc: "Limit to your pincode area" },
+                  { key: "allowMemberPosts", label: "Members can post", desc: "Allow anyone to create posts" },
+                  { key: "requirePostApproval", label: "Approve posts", desc: "Moderator must review" },
+                  { key: "locationRestricted", label: "Local Only", desc: "Limit to your pincode" },
                 ].map(({ key, label, desc }) => (
-                  <label key={key} className="flex items-center justify-between gap-3 rounded-xl border border-base-300 p-3 cursor-pointer hover:border-base-400">
-                    <div><p className="text-sm font-medium">{label}</p><p className="text-xs opacity-50">{desc}</p></div>
-                    <input type="checkbox" className="toggle border-[#1D4ED8] bg-[#1D4ED8] checked:bg-[#1D4ED8] toggle-sm"
+                  <label key={key} className="flex items-center justify-between gap-3 rounded-xl border border-base-content/5 p-2 px-3 cursor-pointer hover:bg-base-200/50 transition-colors">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-black uppercase tracking-tight text-base-content/70 truncate">{label}</p>
+                      <p className="text-[9px] font-medium opacity-40 uppercase tracking-tighter leading-none">{desc}</p>
+                    </div>
+                    <input type="checkbox" className="toggle toggle-primary toggle-sm scale-90"
                       checked={form[key as keyof CreateForm] as boolean}
                       onChange={e => setForm(f => ({ ...f, [key]: e.target.checked }))} />
                   </label>
@@ -1622,10 +1625,10 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
             </>
           )}
         </div>
-        <div className="shrink-0 px-5 py-4 border-t border-base-300 flex gap-3">
+        <div className="shrink-0 px-6 py-4 border-t border-base-content/5 bg-white/5 flex gap-3">
           {step === 2 && (
             <button
-              className="btn btn-ghost border border-base-300 flex-1 items-center justify-center gap-1.5"
+              className="btn btn-sm btn-ghost rounded-xl text-[11px] font-black uppercase tracking-widest flex-1"
               onClick={() => setStep(1)}
               disabled={busy}
             >
@@ -1635,7 +1638,7 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
           {step === 1
             ? (
               <button
-                className="btn bg-[#1D4ED8] text-white font-semibold border-none hover:bg-[#1D4ED8]/90 flex-1 flex items-center justify-center gap-2"
+                className={`btn btn-sm flex-1 rounded-xl text-white text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${!canNext ? "opacity-50" : "bg-blue-700 hover:bg-blue-800 shadow-lg shadow-blue-700/20"}`}
                 disabled={!canNext}
                 onClick={() => setStep(2)}
               >
@@ -1643,11 +1646,11 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Com
               </button>
             ) : (
               <button
-                className="btn bg-[#1D4ED8] text-white font-semibold border-none hover:bg-[#1D4ED8]/90 flex-1 flex items-center justify-center gap-2"
+                className={`btn btn-sm flex-1 rounded-xl text-white text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${busy ? "opacity-70" : "bg-blue-700 hover:bg-blue-800 shadow-lg shadow-blue-700/20"}`}
                 disabled={busy}
                 onClick={submit}
               >
-                {busy ? <><Spin xs /> Creating…</> : <><Rocket size={18} /> Create Community</>}
+                {busy ? "Creating…" : <><Rocket size={16} /> Create Community</>}
               </button>
             )
           }

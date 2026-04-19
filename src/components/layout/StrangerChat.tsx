@@ -262,7 +262,7 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
   };
 
   const containerBase = standalone
-    ? "flex flex-col w-full h-full lg:h-[100dvh] bg-base-200/50 backdrop-blur-2xl relative overflow-hidden"
+    ? "flex flex-col w-full h-full bg-base-200/50 backdrop-blur-2xl relative overflow-hidden"
     : "flex flex-col w-full md:max-w-2xl h-full md:h-[90vh] md:rounded-3xl overflow-hidden bg-base-200 shadow-2xl backdrop-blur-xl relative border border-base-300";
 
   const renderContent = () => (
@@ -275,15 +275,15 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       {!standalone && (
         <div className="shrink-0 z-20 pt-[env(safe-area-inset-top,0px)]">
           <header className="flex items-center justify-between gap-3 px-4 md:px-6 pb-2 bg-base-300/90 backdrop-blur-xl border-b border-base-300 pt-3 md:pt-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-[#1D4ED8] text-white shadow-lg shadow-[#1D4ED8]/20">
-                <Dices size={20} />
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1D4ED8] text-white shadow-lg shadow-[#1D4ED8]/20">
+                <Dices size={16} />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-base font-bold text-base-content tracking-tight leading-tight">Anonymous Chat</h1>
-                <div className="flex items-center gap-1.5 mt-0.5">
+                <h1 className="text-[13px] font-black text-base-content uppercase tracking-tight leading-none">Stranger Chat</h1>
+                <div className="flex items-center gap-1 mt-0.5">
                   <span className={`w-1.5 h-1.5 rounded-full ${DOT_CLASS[chat.status]}`} />
-                  <span className="text-[9px] text-base-content/50 uppercase tracking-widest font-black">
+                  <span className="text-[8px] text-base-content/40 uppercase tracking-widest font-black">
                     {STATUS_LABEL[chat.status]}
                   </span>
                 </div>
@@ -300,31 +300,31 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
 
           {/* ── Persistent Info Banner ── */}
           {(chat.status === "CONNECTED" || chat.status === "PARTNER_LEFT") && (
-            <div className="px-6 py-2.5 bg-base-200/50 backdrop-blur-md border-b border-base-content/5 flex items-center justify-center">
-              <div className="flex items-center gap-2 text-base-content/40 font-bold uppercase tracking-[0.2em] text-[9px]">
+            <div className="px-4 py-2 bg-base-200/50 backdrop-blur-md border-b border-base-content/5 flex items-center justify-center">
+              <div className="flex items-center gap-2 text-base-content/30 font-black uppercase tracking-[0.2em] text-[8px]">
                 <IconShield />
-                <span>Chatting anonymously with local people</span>
+                <span>Identity Masked & Encrypted</span>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* ── Body ── */}
-      <main className="flex-1 flex flex-col min-h-0 relative z-10">
+      {/* ── Body: grows, leaves room for pinned footer ── */}
+      <div className="flex-1 min-h-0 flex flex-col z-10" style={{ paddingBottom: '72px' }}>
         <AnimatePresence mode="wait">
           {chat.status === "IDLE" && (
-            <motion.div key="idle" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} className="h-full">
+            <motion.div key="idle" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} className="flex-1 min-h-0">
               <IdleScreen onStart={chat.startSearch} />
             </motion.div>
           )}
           {chat.status === "SEARCHING" && (
-            <motion.div key="searching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+            <motion.div key="searching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 min-h-0">
               <SearchingScreen queueSize={chat.queueSize} onCancel={chat.cancelSearch} />
             </motion.div>
           )}
           {(chat.status === "CONNECTED" || chat.status === "PARTNER_LEFT") && (
-            <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col">
+            <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-h-0 flex flex-col">
               <MessageArea
                 messages={chat.messages ?? []}
                 myId={chat.session?.yourAnonymousId ?? ""}
@@ -336,26 +336,26 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
             </motion.div>
           )}
           {chat.status === "ERROR" && (
-            <motion.div key="error" className="h-full">
+            <motion.div key="error" className="flex-1 min-h-0">
               <ErrorScreen error={chat.error} onRetry={chat.startSearch} />
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
+      </div>
 
-      {/* ── Footer ── */}
-      <footer className="shrink-0 p-1 md:p-4 pb-[env(safe-area-inset-bottom,0px)] md:pb-2 relative z-30">
+      {/* ── Footer: absolutely anchored to bottom, never shifts ── */}
+      <footer className="absolute bottom-0 left-0 right-0 z-30 p-2 md:p-3 pb-[env(safe-area-inset-bottom,8px)] bg-base-200/95 backdrop-blur-xl border-t border-base-content/5">
         {(chat.status === "CONNECTED" || chat.status === "PARTNER_LEFT") && (
           <div className="max-w-[1000px] mx-auto">
             <AnimatePresence>
               {replyTo && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="mb-3 px-4 py-3 rounded-2xl bg-base-300/50 backdrop-blur-xl border border-base-content/10 flex items-center gap-3">
-                  <div className="w-1 rounded-full bg-[#1D4ED8] h-8 shrink-0" />
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="mb-2 px-3 py-2 rounded-xl bg-base-300/50 backdrop-blur-xl border border-base-content/10 flex items-center gap-3">
+                  <div className="w-1 rounded-full bg-[#1D4ED8] h-6 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-[#1D4ED8] font-bold uppercase tracking-wider mb-0.5">
+                    <p className="text-[9px] text-[#1D4ED8] font-black uppercase tracking-wider mb-0.5">
                       Replying to {replyTo.senderId === chat.session?.yourAnonymousId ? "yourself" : "stranger"}
                     </p>
-                    <p className="text-sm text-base-content/60 truncate">
+                    <p className="text-xs text-base-content/60 truncate font-medium">
                       {replyTo.messageType === "TEXT" ? replyTo.content : `[${replyTo.messageType}]`}
                     </p>
                   </div>
@@ -370,9 +370,9 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
               <div className="flex flex-col gap-2 relative z-50">
                 <div className="flex items-end gap-2 w-full px-1 md:px-0">
                   {/* WhatsApp style chat bar */}
-                  <div className="flex-1 min-w-0 flex items-end bg-base-100 rounded-3xl min-h-[48px] shadow-sm border border-base-content/10 px-1 py-1 relative">
-                    <button onClick={() => { setShowStickerMenu(!showStickerMenu); setShowAttachMenu(false); }} className={`btn btn-ghost btn-circle btn-sm shrink-0 mb-[2px] transition-colors ${showStickerMenu ? "text-[#1D4ED8]" : "text-base-content/50 hover:text-base-content"}`}>
-                      <FiSmile size={22} />
+                  <div className="flex-1 min-w-0 flex items-end bg-base-100 rounded-2xl min-h-[38px] shadow-sm border border-base-content/10 px-0.5 py-0.5 relative">
+                    <button onClick={() => { setShowStickerMenu(!showStickerMenu); setShowAttachMenu(false); }} className={`btn btn-ghost btn-circle btn-xs shrink-0 mb-[1px] ml-0.5 transition-colors ${showStickerMenu ? "text-[#1D4ED8]" : "text-base-content/50 hover:text-base-content"}`}>
+                      <FiSmile size={18} />
                     </button>
 
                     <AnimatePresence>
@@ -397,12 +397,12 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                       onChange={(e) => { setDraft(e.target.value); chat.notifyTyping(); }}
                       onKeyDown={handleKeyDown}
                       placeholder="Message"
-                      className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-base-content placeholder-base-content/40 resize-none py-[10px] px-2 text-[15px] max-h-32 min-h-[20px] leading-relaxed shadow-none"
+                      className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-base-content placeholder-base-content/40 resize-none py-[7px] px-2 text-[13px] max-h-32 min-h-[18px] leading-tight shadow-none"
                     />
 
-                    <div className="relative group/attach flex items-end shrink-0 mb-[2px] right-1">
-                      <button onClick={() => { setShowAttachMenu(!showAttachMenu); setShowStickerMenu(false); }} className={`btn btn-ghost btn-circle btn-sm transition-transform duration-300 ${showAttachMenu ? "rotate-45 text-[#1D4ED8]" : "text-base-content/50 hover:text-base-content"}`}>
-                        <Plus size={22} />
+                    <div className="relative group/attach flex items-end shrink-0 mb-[1px] right-0.5">
+                      <button onClick={() => { setShowAttachMenu(!showAttachMenu); setShowStickerMenu(false); }} className={`btn btn-ghost btn-circle btn-xs transition-transform duration-300 ${showAttachMenu ? "rotate-45 text-[#1D4ED8]" : "text-base-content/50 hover:text-base-content"}`}>
+                        <Plus size={18} />
                       </button>
                       <AnimatePresence>
                         {showAttachMenu && (
@@ -422,9 +422,9 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                   </div>
 
                   {/* Primary Action Button (Send) */}
-                  <div className="flex items-end h-full pb-1 shrink-0">
-                    <button onClick={handleSend} disabled={!draft.trim()} className="btn bg-[#1D4ED8] hover:bg-[#1e40af] disabled:bg-base-content/10 disabled:text-base-content/30 disabled:shadow-none text-white btn-circle shrink-0 h-[44px] w-[44px] shadow-lg shadow-[#1D4ED8]/20 border-none transition-all duration-200 flex items-center justify-center">
-                      <Send size={18} className="ml-0.5" />
+                  <div className="flex items-end h-full pb-0.5 shrink-0">
+                    <button onClick={handleSend} disabled={!draft.trim()} className="btn bg-[#1D4ED8] hover:bg-[#1e40af] disabled:bg-base-content/10 disabled:text-base-content/30 disabled:shadow-none text-white btn-circle shrink-0 h-[36px] w-[36px] shadow-lg shadow-[#1D4ED8]/20 border-none transition-all duration-200 flex items-center justify-center">
+                      <Send size={15} className="ml-0.5" />
                     </button>
                   </div>
                 </div>
@@ -447,11 +447,11 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-4 bg-base-300/30 p-8 rounded-3xl border border-base-content/5 backdrop-blur-md">
-                <p className="text-sm text-base-content/50 font-bold uppercase tracking-widest">Stranger disconnected</p>
-                <div className="flex gap-3 w-full max-w-sm">
-                  <button onClick={chat.startSearch} className="btn bg-[#1D4ED8] hover:bg-[#1D4ED8]/90 text-white flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#1D4ED8]/20 border-none">Find Someone New</button>
-                  <button onClick={onClose} className="btn bg-base-content/5 border-none flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest">Exit</button>
+              <div className="flex flex-col items-center gap-3 bg-base-300/30 p-5 rounded-2xl border border-base-content/5 backdrop-blur-md max-w-sm mx-auto">
+                <p className="text-[10px] text-base-content/50 font-black uppercase tracking-[0.2em]">Stranger disconnected</p>
+                <div className="flex gap-2 w-full">
+                  <button onClick={chat.startSearch} className="btn btn-sm bg-[#1D4ED8] hover:bg-[#1D4ED8]/90 text-white flex-1 h-10 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#1D4ED8]/20 border-none">Find New</button>
+                  <button onClick={onClose} className="btn btn-sm bg-base-content/5 border-none flex-1 h-10 rounded-xl font-black text-[10px] uppercase tracking-widest">Exit</button>
                 </div>
               </div>
             )}
@@ -463,8 +463,8 @@ export default function StrangerChat({ onClose, standalone }: { onClose?: () => 
       {/* ── Media Preview Sheet ── */}
       <AnimatePresence>
         {mediaPreviews.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMediaPreviews([])}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="absolute bottom-0 left-0 right-0 z-50 bg-base-200 shadow-[0_-20px_60px_rgba(0,0,0,0.3)] rounded-t-[32px] flex flex-col h-[85dvh] max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm" onClick={() => setMediaPreviews([])}>
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="absolute bottom-0 left-0 right-0 z-[130] bg-base-200 shadow-[0_-20px_60px_rgba(0,0,0,0.3)] rounded-t-[32px] flex flex-col h-[85vh] max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between p-4 px-6 relative shrink-0">
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-base-content/10" />
                 <button onClick={() => setMediaPreviews([])} className="btn btn-ghost btn-sm btn-circle text-base-content/50 hover:text-base-content"><X size={20} /></button>
@@ -648,8 +648,8 @@ function MessageArea({ messages, myId, partnerTyping, bottomRef, onReply, onMedi
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 md:p-4 scrollbar-hide scroll-smooth flex flex-col gap-2 relative">
-      <div className="mb-auto" />
+    <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 md:p-4 scrollbar-hide flex flex-col gap-2 relative">
+      <div className="mt-auto" />
 
       {groupedMessages.map((group, i) => <Bubble key={group[0].messageId ?? i} msgGroup={group} isMine={group[0].senderId === myId} allMessages={messages} onReply={onReply} onMediaClick={onMediaClick} />)}
       {partnerTyping && (

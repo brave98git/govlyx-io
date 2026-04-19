@@ -22,6 +22,8 @@ import {
   Play,
   Volume2,
   VolumeX,
+  Link,
+  Instagram,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CommentSection from "./CommentSection";
@@ -62,14 +64,19 @@ const apiPost = (url: string, body: unknown) => apiFetch(url, "POST", body);
 const apiPut = (url: string, body?: unknown) => apiFetch(url, "PUT", body);
 const apiDelete = (url: string) => apiFetch(url, "DELETE");
 
-async function recordShare(postType: "posts" | "social-posts", id: number) {
-  const url = `${window.location.origin}/${postType}/${id}`;
-  try {
-    await navigator.clipboard.writeText(url);
-  } catch {
-    window.prompt("Copy link:", url);
+async function recordShare(postType: "posts" | "social-posts", id: number, skipApi?: boolean, method: string = "copy") {
+  if (method === "copy") {
+    const url = `${window.location.origin}/post/${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt("Copy link:", url);
+    }
   }
-  apiPost(`/api/interactions/${postType}/${id}/share?shareType=LINK_COPY`, {}).catch(() => { });
+  if (!skipApi) {
+    const typeStr = method === "copy" ? "LINK_COPY" : "EXTERNAL_SHARE";
+    apiPost(`/api/interactions/${postType}/${id}/share?shareType=${typeStr}`, {}).catch(() => { });
+  }
 }
 
 function useCopied() {
@@ -300,7 +307,7 @@ function ModernMediaCarousel({
   }, [activeIndex, isCurrentVideo]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 shadow-2xl group">
+    <div className="relative w-full overflow-hidden rounded-2xl bg-base-300 shadow-inner group">
       <motion.div
         className="relative h-64 sm:h-80 w-full bg-black/50 flex items-center justify-center cursor-pointer"
         onClick={isCurrentVideo ? togglePlay : onExpand}
@@ -487,9 +494,9 @@ function CommunityStrip({
           </div>
         )}
         <div className="min-w-0">
-          <p className="text-xs font-bold text-sky-500 truncate">{communityName}</p>
+          <p className="text-[10px] font-black text-sky-500 truncate uppercase tracking-tighter">{communityName}</p>
           {memberCount && (
-            <p className="text-[10px] text-base-content/60 mt-0.5">{memberCount} members</p>
+            <p className="text-[9px] font-medium text-base-content/50 mt-0.5">{memberCount} members</p>
           )}
         </div>
       </div>
@@ -543,7 +550,7 @@ function AuthorRow({
         {post.userProfileImage ? (
           <img
             src={post.userProfileImage}
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-red-400/30 ring-offset-1 ring-offset-slate-100"
+            className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/10 ring-offset-2 ring-offset-base-100"
             alt=""
           />
         ) : (
@@ -551,32 +558,30 @@ function AuthorRow({
             src={`https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(
               post.username || "?"
             )}`}
-            className="w-10 h-10 rounded-full object-cover bg-slate-200 ring-2 ring-red-400/30 ring-offset-1 ring-offset-slate-100"
+            className="w-10 h-10 rounded-full object-cover bg-base-200 ring-2 ring-primary/10 ring-offset-2 ring-offset-base-100"
             alt="Avatar"
           />
         )}
-        <motion.div
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ repeat: Infinity, duration: 3 }}
-          className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-green-500 border-2 border-white shadow-md"
+        <div
+          className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-base-100 shadow-sm"
         />
       </motion.div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-bold text-base-content">
+          <span className="text-xs font-black text-base-content uppercase tracking-tight">
             {post.userDisplayName || post.username}
           </span>
           {badge && (
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200"
+              className="text-[8px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200"
             >
               {badge}
             </motion.span>
           )}
         </div>
-        <p className="text-xs text-base-content/60 mt-0.5 font-medium">
+        <p className="text-[10px] text-base-content/50 mt-0.5 font-bold uppercase tracking-tighter">
           {post.timeAgo ?? "just now"}
         </p>
       </div>
@@ -715,6 +720,114 @@ function ResolveModal({
   );
 }
 
+// ─── Share Modal ─────────────────────────────────────────────────────────────
+function ShareModal({
+  isOpen,
+  onClose,
+  post,
+  onShareAction
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  post: AnyPost;
+  onShareAction: (method: string) => void;
+}) {
+  const url = `${window.location.origin}/post/${post.id}`;
+  const rawText = post.content || "";
+  const shortened = rawText.length > 50 ? rawText.slice(0, 50) + "..." : rawText;
+  const text = encodeURIComponent(`Check out this post on Govlyx:\n"${shortened}"\n\n`);
+  
+  const handleCopy = () => {
+    onShareAction("copy");
+    onClose();
+  };
+
+  const handleWhatsApp = () => {
+    window.open(`https://wa.me/?text=${text}${encodeURIComponent(url)}`, "_blank");
+    onShareAction("whatsapp");
+    onClose();
+  };
+
+  const handleTwitter = () => {
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`, "_blank");
+    onShareAction("twitter");
+    onClose();
+  };
+
+  const handleInstagram = () => {
+    navigator.clipboard.writeText(url).catch(() => {});
+    alert("Post link copied to clipboard! Paste it into Instagram DMs or Stories.");
+    window.open("https://instagram.com", "_blank");
+    onShareAction("instagram");
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           exit={{ opacity: 0 }}
+           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+           onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.95, y: 10, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.95, y: 10, opacity: 0 }}
+            className="w-full max-w-xs rounded-3xl border border-base-300 bg-base-100 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-6 text-center text-lg font-bold text-base-content">Share Post via</h3>
+            
+            <div className="flex flex-wrap justify-center gap-5">
+              {/* Copy */}
+              <button onClick={handleCopy} className="flex flex-col items-center w-14 gap-2 group">
+                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center group-hover:scale-105 transition-all shadow-sm shrink-0 aspect-square">
+                  <Link size={24} className="text-slate-600" />
+                </div>
+                <span className="text-[11px] font-semibold text-center text-base-content/80">Copy</span>
+              </button>
+              
+              {/* WhatsApp */}
+              <button onClick={handleWhatsApp} className="flex flex-col items-center w-14 gap-2 group">
+                <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center group-hover:scale-105 transition-all shadow-sm shrink-0 aspect-square">
+                  <svg viewBox="0 0 24 24" className="w-6 h-6 fill-green-600"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </div>
+                <span className="text-[11px] font-semibold text-center text-base-content/80">WhatsApp</span>
+              </button>
+
+              {/* Twitter / X */}
+              <button onClick={handleTwitter} className="flex flex-col items-center w-14 gap-2 group">
+                <div className="w-14 h-14 rounded-full bg-slate-900 flex items-center justify-center group-hover:scale-105 transition-all shadow-sm shrink-0 aspect-square">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </div>
+                <span className="text-[11px] font-semibold text-center text-base-content/80">X</span>
+              </button>
+              
+              {/* Instagram */}
+              <button onClick={handleInstagram} className="flex flex-col items-center w-14 gap-2 group">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-all shadow-sm shrink-0 aspect-square">
+                  <Instagram size={24} className="text-white" />
+                </div>
+                <span className="text-[11px] font-semibold text-center text-base-content/80">Insta</span>
+              </button>
+            </div>
+            
+            <button 
+               onClick={onClose}
+               className="mt-6 w-full py-3 rounded-2xl bg-base-200 text-sm font-bold opacity-80 hover:bg-base-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── Action Pill ──────────────────────────────────────────────────────────────
 function ActionPill({
   onClick,
@@ -735,13 +848,12 @@ function ActionPill({
     <motion.button
       onClick={onClick}
       disabled={disabled}
-      whileHover={{ scale: disabled ? 1 : 1.08, y: -2 }}
-      whileTap={{ scale: disabled ? 1 : 0.92 }}
-      transition={{ type: "spring", stiffness: 400, damping: 15 }}
-      className={`flex items-center gap-2 rounded-xl transition-all duration-200 disabled:opacity-30 select-none border border-transparent ${vertical ? "p-3 flex-col min-w-[54px]" : "px-4 py-2.5"
-        } text-[11px] font-black uppercase tracking-wider ${active
-          ? `${activeClass} shadow-sm shadow-current/5`
-          : "text-base-content/50 border-transparent hover:bg-base-200 hover:text-base-content"
+      whileHover={{ scale: disabled ? 1 : 1.05, backgroundColor: "var(--base-200)" }}
+      whileTap={{ scale: disabled ? 1 : 0.95 }}
+      className={`flex items-center gap-1 sm:gap-1.5 rounded-2xl transition-all duration-200 disabled:opacity-30 select-none border border-transparent ${vertical ? "p-2 sm:p-2.5 flex-col min-w-[48px] sm:min-w-[54px]" : "px-2 sm:px-3 py-1 sm:py-2"
+        } text-[9px] sm:text-[10px] font-black uppercase tracking-tighter ${active
+          ? `${activeClass} bg-current/5 border-current/10 shadow-sm`
+          : "text-base-content/60 hover:text-base-content bg-base-200/50 hover:bg-base-300/80"
         }`}
     >
       {children}
@@ -891,7 +1003,9 @@ export default function PostCard({
   const [likeCount, setLikeCount] = useState(post?.likeCount ?? 0);
   const [dislikeCount, setDislikeCount] = useState((post as IssuePost)?.dislikeCount ?? 0);
   const [shareCount, setShareCount] = useState(post?.shareCount ?? 0);
+  const [hasSharedLocally, setHasSharedLocally] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isJoined, setIsJoined] = useState((post as any).isMember ?? false);
@@ -1031,20 +1145,23 @@ export default function PostCard({
     }
   }
 
-  async function handleShare() {
+  async function actuallyTriggerShare(method: string) {
     if (isProcessing) return;
     setIsProcessing(true);
-    flash();
+    if (method === "copy") flash();
     try {
-      const nextShareCount = shareCount + 1;
-      setShareCount(nextShareCount);
-      onShare?.(post.id);
-      
-      window.dispatchEvent(new CustomEvent('POST_SYNC', {
-        detail: { postId: post.id, source: 'share', shareCount: nextShareCount }
-      }));
+      if (!hasSharedLocally) {
+        const nextShareCount = shareCount + 1;
+        setShareCount(nextShareCount);
+        setHasSharedLocally(true);
+        onShare?.(post.id);
+        
+        window.dispatchEvent(new CustomEvent('POST_SYNC', {
+          detail: { postId: post.id, source: 'share', shareCount: nextShareCount }
+        }));
+      }
 
-      await recordShare(interactionType, post.id);
+      await recordShare(interactionType, post.id, hasSharedLocally, method);
     } finally {
       setIsProcessing(false);
     }
@@ -1143,11 +1260,11 @@ export default function PostCard({
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -4, boxShadow: "0 20px 60px -15px rgba(0,0,0,0.1)" }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className={`rounded-2xl border ${borderClass} shadow-md overflow-hidden flex flex-col backdrop-blur-sm relative group/card`}
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        whileHover={{ y: -6 }}
+        transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        className={`rounded-[2rem] border-2 ${borderClass} shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col backdrop-blur-md relative group/card transition-all duration-500`}
       >
         <div className="p-5 sm:p-6 flex flex-col gap-4 flex-1">
           {/* Community Strip at top */}
@@ -1211,12 +1328,12 @@ export default function PostCard({
           )}
 
           {/* Content: Text Always Above */}
-          <motion.div className="space-y-2">
-            <motion.p className={`text-sm leading-relaxed text-base-content/90 ${!expanded ? "line-clamp-3" : ""}`}>
+          <motion.div className="space-y-1.5">
+            <motion.p className={`text-[13px] leading-relaxed font-medium text-base-content/90 ${!expanded ? "line-clamp-3" : ""}`}>
               {post.content}
             </motion.p>
             {(post.content?.length ?? 0) > 160 && (
-              <button onClick={() => setExpanded(!expanded)} className="text-[11px] font-black uppercase tracking-wider text-blue-600">
+              <button onClick={() => setExpanded(!expanded)} className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline">
                 {expanded ? "Less ↑" : "More ↓"}
               </button>
             )}
@@ -1277,25 +1394,25 @@ export default function PostCard({
               )}
 
               {/* Horizontal Action Bar: Shown for all posts on mobile, and on desktop if NO media */}
-              <div className={`flex items-center gap-2 border-t border-base-300 pt-3 ${hasMedia ? "lg:hidden" : "flex"}`}>
-                <ActionPill onClick={handleLike} active={liked} disabled={isResolved || isProcessing} activeClass="border-pink-500 text-pink-500 bg-transparent">
+              <div className={`flex items-center gap-1 sm:gap-2 border-t border-base-300 pt-3 ${hasMedia ? "lg:hidden" : "flex"}`}>
+                <ActionPill onClick={handleLike} active={liked} disabled={isResolved || isProcessing} activeClass="text-pink-500">
                   <Heart size={16} className={liked ? "fill-current" : ""} />
                   <span>{likeCount || "0"}</span>
                 </ActionPill>
-                <ActionPill onClick={() => setCommentsOpen(!commentsOpen)} active={commentsOpen} activeClass="border-sky-500 text-sky-500 bg-transparent">
+                <ActionPill onClick={() => setCommentsOpen(!commentsOpen)} active={commentsOpen} activeClass="text-sky-500">
                   <MessageSquare size={16} className={commentsOpen ? "fill-current" : ""} />
                   <span>{post.commentCount ?? 0}</span>
                 </ActionPill>
-                <ActionPill onClick={handleShare} active={copied} disabled={isProcessing} activeClass="border-emerald-500 text-emerald-500 bg-transparent">
+                <ActionPill onClick={() => setShareMenuOpen(true)} active={copied} disabled={isProcessing} activeClass="text-emerald-500">
                   <Share2 size={16} />
                   <span>{copied ? "Copied!" : (shareCount || "0")}</span>
                 </ActionPill>
                 <div className="flex-1" />
-                <ActionPill onClick={handleSave} active={saved} disabled={isProcessing} activeClass="border-amber-500 text-amber-500 bg-transparent">
+                <ActionPill onClick={handleSave} active={saved} disabled={isProcessing} activeClass="text-amber-500">
                   <Bookmark size={16} className={saved ? "fill-current" : ""} />
                 </ActionPill>
                 {isIssue && (
-                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved || isProcessing} activeClass="bg-rose-500/10 text-rose-500">
+                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved || isProcessing} activeClass="text-rose-500">
                     <ThumbsDown size={16} className={disliked ? "fill-current" : ""} />
                     <span>{dislikeCount || "0"}</span>
                   </ActionPill>
@@ -1310,23 +1427,23 @@ export default function PostCard({
                 animate={{ opacity: 1, x: 0 }}
                 className="hidden lg:flex flex-col gap-2 p-1 rounded-2xl bg-base-200/50 border border-base-300 lg:order-2 shrink-0 sticky top-0"
               >
-                <ActionPill onClick={handleLike} active={liked} disabled={isResolved || isProcessing} vertical activeClass="border-pink-500 text-pink-500 bg-transparent">
+                <ActionPill onClick={handleLike} active={liked} disabled={isResolved || isProcessing} vertical activeClass="text-pink-500">
                   <Heart size={18} className={liked ? "fill-current" : ""} />
                   <span>{likeCount || "0"}</span>
                 </ActionPill>
-                <ActionPill onClick={() => setCommentsOpen(!commentsOpen)} active={commentsOpen} vertical activeClass="border-sky-500 text-sky-500 bg-transparent">
+                <ActionPill onClick={() => setCommentsOpen(!commentsOpen)} active={commentsOpen} vertical activeClass="text-sky-500">
                   <MessageSquare size={18} className={commentsOpen ? "fill-current" : ""} />
                   <span>{post.commentCount ?? 0}</span>
                 </ActionPill>
-                <ActionPill onClick={handleShare} active={copied} disabled={isProcessing} vertical activeClass="border-emerald-500 text-emerald-500 bg-transparent">
+                <ActionPill onClick={() => setShareMenuOpen(true)} active={copied} disabled={isProcessing} vertical activeClass="text-emerald-500">
                   <Share2 size={18} />
                   <span className="text-[9px] leading-tight mt-0.5">{copied ? "Copied" : (shareCount || "0")}</span>
                 </ActionPill>
-                <ActionPill onClick={handleSave} active={saved} disabled={isProcessing} vertical activeClass="border-amber-500 text-amber-500 bg-transparent">
+                <ActionPill onClick={handleSave} active={saved} disabled={isProcessing} vertical activeClass="text-amber-500">
                   <Bookmark size={18} className={saved ? "fill-current" : ""} />
                 </ActionPill>
                 {isIssue && (
-                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved || isProcessing} vertical activeClass="border-rose-500 text-rose-500 bg-transparent">
+                  <ActionPill onClick={handleDislike} active={disliked} disabled={isResolved || isProcessing} vertical activeClass="text-rose-500">
                     <ThumbsDown size={18} className={disliked ? "fill-current" : ""} />
                     <span>{dislikeCount || "0"}</span>
                   </ActionPill>
@@ -1357,6 +1474,13 @@ export default function PostCard({
         isOpen={resolveOpen}
         onClose={() => setResolveOpen(false)}
         onConfirm={handleResolveConfirm}
+      />
+
+      <ShareModal
+        isOpen={shareMenuOpen}
+        onClose={() => setShareMenuOpen(false)}
+        post={post}
+        onShareAction={actuallyTriggerShare}
       />
 
       {/* Lightbox */}

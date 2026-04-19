@@ -17,11 +17,13 @@ import { useTheme } from "../../hooks/useTheme";
 import CreatePost from "../ui/CreatePost";
 import SearchOverlay from "../search/SearchOverlay";
 import NotificationDropdown from "./NotificationDropdown";
+import { useModal } from "../../context/ModalContext";
 import { useCurrentUser } from "../../hooks/useUser";
 import { useUnreadNotificationsCount } from "../../hooks/useNotification";
 
 const Navbar = () => {
   const [openCreate, setOpenCreate] = useState(false);
+  const { openModal, closeModal } = useModal();
   const { theme, toggleTheme } = useTheme();
   
   const { data: user } = useCurrentUser();
@@ -143,7 +145,7 @@ const Navbar = () => {
 
             {/* CREATE - Desktop */}
             <button
-              onClick={() => setOpenCreate(true)}
+              onClick={() => { setOpenCreate(true); openModal(); }}
               className="btn btn-sm bg-blue-700 hidden sm:flex gap-1 text-white"
             >
               <Plus size={16} />
@@ -152,7 +154,7 @@ const Navbar = () => {
 
             {/* MOBILE CREATE ICON */}
             <button
-              onClick={() => setOpenCreate(true)}
+              onClick={() => { setOpenCreate(true); openModal(); }}
               className="btn btn-ghost btn-sm sm:hidden hover:bg-blue-700/10"
               aria-label="Create post"
             >
@@ -186,7 +188,7 @@ const Navbar = () => {
           </div>
 
           {/* CREATE POST MODAL */}
-          <CreatePost open={openCreate} onClose={() => setOpenCreate(false)} />
+          <CreatePost open={openCreate} onClose={() => { setOpenCreate(false); closeModal(); }} />
         </div>
       </motion.header>
 

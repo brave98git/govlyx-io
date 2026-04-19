@@ -1,128 +1,143 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Flame, Clock, ArrowUp, SlidersHorizontal, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import PostCard from "../components/post/PostCard";
 import type { AnyPost } from "../components/post/PostCard";
 import EmptyState from "../components/ui/EmptyState";
 import PostSkeleton from "../components/post/PostSkeleton";
 import axiosInstance from "../api/axiosConfig";
 
-
 import { useCurrentUser } from "../hooks/useUser";
 import { toPostCardPost } from "../utils/postUtils";
 
-
 const FEED_SIZE = 20;
 
-
 function useFeed(sourceTab: string, sortTab: string) {
-  const [posts, setPosts] = useState<AnyPost[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
-  const [nextCursor, setNextCursor] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [fatalError, setFatalError] = useState(false);
+  const queryClient = useQueryClient();
+  const queryKey = ["feed", sourceTab, sortTab];
 
-  const fetchPage = useCallback(
-    async (cursor: number | null, replace: boolean) => {
-      setLoading(true);
-      setError(null);
-      if (replace) {
-        setInitialLoading(true);
-        setPosts([]);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isLoading: initialLoading,
+    isError,
+    error: queryError,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey,
+    queryFn: async ({ pageParam = null }: { pageParam?: number | null }) => {
+      const params = {
+        sort: sortTab.toUpperCase(),
+        size: FEED_SIZE,
+        ...(pageParam !== null && { lastPostId: pageParam })
+      };
+
+      let endpoint = "/api/v1/feed/for-you";
+      if (sourceTab === "location") endpoint = "/api/v1/feed/local";
+      else if (sourceTab === "following") endpoint = "/api/v1/feed/following";
+      else if (sourceTab === "official") endpoint = "/api/v1/feed/official";
+
+      const res = await axiosInstance.get(endpoint, { params });
+      const json = res.data;
+
+      const isWrapped = json.success !== undefined && json.data !== undefined;
+      const container = isWrapped ? json.data : json;
+
+      let items: any[] = [];
+      if (Array.isArray(container)) {
+        items = container;
+      } else if (container && typeof container === "object") {
+        items = container.data ?? container.content ?? [];
       }
 
-      try {
-        const params = {
-          sort: sortTab.toUpperCase(),
-          size: FEED_SIZE,
-          ...(cursor !== null && { lastPostId: cursor })
-        };
+      const mapped = items.map(toPostCardPost);
 
-        // Map frontend tabs to backend endpoints
-        let endpoint = "/api/v1/feed/for-you";
-        if (sourceTab === "location") endpoint = "/api/v1/feed/local";
-        else if (sourceTab === "following") endpoint = "/api/v1/feed/following";
-        else if (sourceTab === "official") endpoint = "/api/v1/feed/official";
-
-        const res = await axiosInstance.get(endpoint, { params });
-        const json = res.data;
-
-        // ── Robust Data Mapping ───────────────────────────────────────────────
-        /** 
-         * Logic:
-         * 1. If wrapped in ApiResponse: { success: true, data: { data: [...], hasMore: true } }
-         * 2. If direct PaginatedResponse: { data: [...], hasMore: true } 
-         */
-        const isWrapped = json.success !== undefined && json.data !== undefined;
-        const container = isWrapped ? json.data : json;
-
-        // Identify the list of posts
-        let items: any[] = [];
-        if (Array.isArray(container)) {
-          items = container;
-        } else if (container && typeof container === "object") {
-          items = container.data ?? container.content ?? [];
-        }
-
-        const mapped = items.map(toPostCardPost);
-
-        setPosts((prev) => {
-          const combined = replace ? mapped : [...prev, ...mapped];
-          const map = new Map<string, AnyPost>();
-          combined.forEach((item: AnyPost) => {
-            map.set(item.id + "-" + item.variant, item);
-          });
-          return Array.from(map.values());
-        });
-
-        // Extract metadata from the container layer (not the list layer)
-        setHasMore(container?.hasMore ?? false);
-        setNextCursor(container?.nextCursor ?? null);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Failed to load feed");
-        setHasMore(false);
-      } finally {
-        setLoading(false);
-        setInitialLoading(false);
-      }
+      return {
+        posts: mapped,
+        hasMore: container?.hasMore ?? false,
+        nextCursor: container?.nextCursor ?? null,
+      };
     },
-    [sourceTab, sortTab]
-  );
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextCursor : undefined,
+    initialPageParam: null,
+  });
 
-  useEffect(() => {
-    fetchPage(null, true);
-  }, [fetchPage]);
+  const map = new Map<string, AnyPost>();
+  if (data?.pages) {
+    data.pages.forEach((page) => {
+      page.posts.forEach((item: AnyPost) => {
+        map.set(item.id + "-" + item.variant, item);
+      });
+    });
+  }
+  const posts = Array.from(map.values());
+
+  const loading = isFetching;
+  const hasMore = hasNextPage;
+  const error = isError ? (queryError as Error).message : null;
+  const fatalError = isError;
 
   const loadMore = useCallback(() => {
-    if (!loading && hasMore && !fatalError) fetchPage(nextCursor, false);
-  }, [loading, hasMore, fatalError, nextCursor, fetchPage]);
+    if (!isFetchingNextPage && hasNextPage) fetchNextPage();
+  }, [isFetchingNextPage, hasNextPage, fetchNextPage]);
 
   const retry = useCallback(() => {
-    setFatalError(false);
-    fetchPage(null, true);
-  }, [fetchPage]);
+    refetch();
+  }, [refetch]);
 
   const updatePost = useCallback((postId: number, changes: Partial<AnyPost>) => {
-    setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? ({ ...p, ...changes } as AnyPost) : p))
-    );
-  }, []);
+    queryClient.setQueryData(queryKey, (oldData: any) => {
+      if (!oldData) return oldData;
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page: any) => ({
+          ...page,
+          posts: page.posts.map((p: AnyPost) =>
+            p.id === postId ? { ...p, ...changes } : p
+          )
+        }))
+      };
+    });
+  }, [queryClient, queryKey]);
 
   const prependPost = useCallback((rawPost: any) => {
     const mapped = toPostCardPost(rawPost);
-    setPosts((prev) => {
-      const combined = [mapped, ...prev] as AnyPost[];
-      const map = new Map<string, AnyPost>();
-      combined.forEach((item: AnyPost) => {
-        map.set(item.id + "-" + item.variant, item);
-      });
-      return Array.from(map.values());
+    queryClient.setQueryData(queryKey, (oldData: any) => {
+      if (!oldData) {
+        return {
+          pages: [{ posts: [mapped], hasMore: false, nextCursor: null }],
+          pageParams: [null]
+        };
+      }
+      const firstPage = oldData.pages[0];
+      return {
+        ...oldData,
+        pages: [
+          { ...firstPage, posts: [mapped, ...firstPage.posts] },
+          ...oldData.pages.slice(1)
+        ]
+      };
     });
-  }, []);
+  }, [queryClient, queryKey]);
 
-  return { posts, loading, initialLoading, hasMore, error, fatalError, loadMore, retry, updatePost, prependPost, setPosts };
+  const deletePost = useCallback((postId: number) => {
+    queryClient.setQueryData(queryKey, (oldData: any) => {
+      if (!oldData) return oldData;
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page: any) => ({
+          ...page,
+          posts: page.posts.filter((p: AnyPost) => p.id !== postId)
+        }))
+      };
+    });
+  }, [queryClient, queryKey]);
+
+  return { posts, loading, initialLoading, hasMore, error, fatalError, loadMore, retry, updatePost, prependPost, deletePost };
 }
 
 function InfiniteScrollTrigger({ onIntersect }: { onIntersect: () => void }) {
@@ -162,7 +177,7 @@ const Home = () => {
   const [showSort, setShowSort] = useState(false);
 
   const { data: user } = useCurrentUser();
-  const { posts, loading, initialLoading, hasMore, error, fatalError, loadMore, retry, updatePost, prependPost, setPosts } =
+  const { posts, loading, initialLoading, hasMore, error, fatalError, loadMore, retry, updatePost, prependPost, deletePost } =
     useFeed(sourceTab, sortTab);
 
   const currentUser = user ? {
@@ -190,9 +205,8 @@ const Home = () => {
   }, []);
 
   const handleDelete = useCallback((postId: number) => {
-    // Only update local state; PostCard handles confirmation and the API call.
-    setPosts(prev => prev.filter(p => p.id !== postId));
-  }, [setPosts]);
+    deletePost(postId);
+  }, [deletePost]);
 
   useEffect(() => {
     const onPostCreated = (e: Event) => {
@@ -327,10 +341,16 @@ const Home = () => {
         )}
 
         {!hasMore && posts.length > 0 && !error && (
-          <div className="w-full">
-            <p className="py-12 text-center text-xs opacity-40 font-bold tracking-widest uppercase flex items-center justify-center gap-2">
-              <Sparkles size={16} className="text-amber-400" />
-              You've reached the end of the feed
+          <div className="w-full py-20 flex flex-col items-center justify-center gap-4 group/end">
+            <div className="flex items-center gap-4 w-full px-4">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-base-content/5 to-transparent" />
+              <div className="p-3 rounded-2xl bg-base-200/30 backdrop-blur-sm border border-base-content/5 group-hover/end:scale-110 group-hover/end:bg-base-200/50 transition-all duration-500">
+                <Sparkles size={20} className="text-amber-400 group-hover/end:rotate-12 transition-transform" />
+              </div>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent via-base-content/5 to-transparent" />
+            </div>
+            <p className="text-[10px] sm:text-xs opacity-30 font-black tracking-[0.2em] uppercase text-center max-w-[280px] leading-relaxed">
+              You've officially reached the end of the feed
             </p>
           </div>
         )}

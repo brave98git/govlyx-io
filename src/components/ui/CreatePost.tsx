@@ -446,21 +446,24 @@ function PostForm({
           <div className="flex items-center gap-2">
             <AlertTriangle size={15} className={`transition-colors flex-shrink-0 ${isReportingIssue ? "text-orange-400" : "text-base-content/30"}`} />
             <div>
-              <p className={`text-xs font-semibold ${isReportingIssue ? "text-orange-400" : "text-base-content/50"}`}>
-                Report to Government Department
+              <p className={`text-[11px] font-black uppercase tracking-tight ${isReportingIssue ? "text-orange-400" : "text-base-content/60"}`}>
+                Report to Government
               </p>
-              <p className="text-base-content/30 text-xs text-nowrap">Officially flag this issue to authorities</p>
+              <p className="text-base-content/40 text-[9px] leading-tight font-medium uppercase tracking-tighter">Flag issue to authorities</p>
             </div>
           </div>
-          <div
-            className="relative w-11 h-6 rounded-full cursor-pointer transition-colors duration-200 flex-shrink-0"
-            style={{ background: isReportingIssue ? "#f97316" : "#374151" }}
-            onClick={() => { setIsReportingIssue(!isReportingIssue); setError(null); }}
-          >
+          <div className="flex-shrink-0 ml-2">
             <div
-              className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200"
-              style={{ transform: isReportingIssue ? "translateX(22px)" : "translateX(2px)" }}
-            />
+              className={`relative w-8 h-4.5 rounded-full cursor-pointer transition-all duration-300 border ${isReportingIssue ? "bg-orange-500 border-orange-600 shadow-inner" : "bg-base-300 border-base-content/10"}`}
+              onClick={() => { setIsReportingIssue(!isReportingIssue); setError(null); }}
+            >
+              <motion.div
+                animate={{ x: isReportingIssue ? 16 : 2 }}
+                initial={false}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -472,15 +475,15 @@ function PostForm({
             className="overflow-hidden"
           >
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-orange-400/70 uppercase tracking-wider flex items-center gap-1">
-                <MdLocationOn size={14} /> Area Pincode <span className="text-red-400">*</span>
+              <label className="text-[10px] font-black text-orange-400/70 uppercase tracking-widest flex items-center gap-1">
+                <MdLocationOn size={12} /> Area Pincode <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
                 inputMode="numeric"
                 maxLength={6}
                 placeholder="e.g. 400001 (Mumbai)"
-                className="input input-bordered input-sm focus:border-orange-500 w-full"
+                className="input input-bordered input-sm focus:border-orange-500 w-full bg-base-100/50"
                 value={targetPincode}
                 onChange={(e) => { setTargetPincode(e.target.value.replace(/\D/g, "")); setError(null); }}
               />
@@ -497,7 +500,7 @@ function PostForm({
               ? "Describe the issue..."
               : "What's on your mind?"
           }
-          className={`textarea textarea-bordered w-full min-h-[110px] resize-none transition-colors ${isReportingIssue ? "border-orange-500/40 focus:border-orange-500" : "focus:border-[#1D4ED8]"
+          className={`textarea textarea-bordered w-full min-h-[90px] text-sm resize-none transition-colors bg-base-100/50 ${isReportingIssue ? "border-orange-500/40 focus:border-orange-500" : "focus:border-primary"
             }`}
           value={content}
           onChange={(e) => handleContentChange(e.target.value)}
@@ -568,24 +571,25 @@ function PostForm({
       </div>
 
       <div>
-        <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1 ${isReportingIssue ? "text-orange-400" : "text-base-content/70"}`}>
-          <RiAttachment2 size={14} /> Attach Media <span className="text-base-content/40 font-normal normal-case tracking-normal ml-1">(optional)</span>
+        <p className={`text-[10px] font-black uppercase tracking-widest mb-1.5 flex items-center gap-1 ${isReportingIssue ? "text-orange-400" : "text-base-content/70"}`}>
+          <RiAttachment2 size={12} /> Attach Media <span className="text-base-content/40 font-bold tracking-tighter ml-1 uppercase">(optional)</span>
         </p>
         <MediaUploadZone accent={isReportingIssue ? "orange" : "blue"} files={files} onChange={setFiles} />
       </div>
 
-      <div className="flex justify-end gap-2 pt-1">
-        <button onClick={onClose} className="btn btn-sm btn-ghost" disabled={loading}>Cancel</button>
+      <div className="flex items-center justify-end gap-2 pt-2 border-t border-base-content/5">
+        <button onClick={onClose} className="btn btn-sm btn-ghost rounded-xl px-4" disabled={loading}>Cancel</button>
         <button
           disabled={loading}
-          className={`btn btn-sm text-white min-w-[100px] transition-colors duration-200 ${isReportingIssue ? "bg-orange-500 hover:bg-orange-600" : "bg-[#1D4ED8] hover:bg-[#1D4ED8]/90"
-            } ${loading ? "opacity-70" : ""}`}
+          className={`btn btn-sm text-white min-w-[90px] sm:min-w-[100px] rounded-xl transition-all duration-300 ${isReportingIssue ? "bg-orange-500 hover:bg-orange-600 shadow-orange-500/20" : "bg-primary hover:bg-primary/90 shadow-primary/20"
+            } ${loading ? "opacity-70" : "shadow-lg"}`}
           onClick={handlePost}
         >
           {loading ? (
             <span className="flex items-center gap-1.5">
               <Loader2 size={13} className="animate-spin" />
-              Submitting...
+              <span className="hidden sm:inline">Submitting...</span>
+              <span className="sm:hidden">...</span>
             </span>
           ) : (
             "Post"
@@ -759,7 +763,7 @@ function PollForm({
       <div className="relative group">
         <textarea
           ref={textareaRef}
-          className={`textarea textarea-bordered w-full min-h-[90px] bg-base-300/30 border-base-content/10 focus:border-[#1D4ED8] focus:bg-base-100 transition-all duration-200 resize-none text-sm font-medium ${errors.pollQuestion ? "border-red-500/50" : ""}`}
+          className={`textarea textarea-bordered w-full min-h-[90px] bg-base-100/50 border-base-content/10 focus:border-[#1D4ED8] focus:bg-base-100 transition-all duration-200 resize-none text-sm font-medium ${errors.pollQuestion ? "border-red-500/50" : ""}`}
           placeholder="Ask your poll question..."
           value={pollQuestion}
           onChange={(e) => handleQuestionChange(e.target.value)}
@@ -822,7 +826,7 @@ function PollForm({
               </span>
               <input
                 type="text"
-                className={`input input-bordered w-full h-[42px] transition-all duration-200 focus:border-[#1D4ED8] bg-base-300/30 sm:pl-20 ${errors[`opt${i}`] ? "border-red-500/50" : "border-base-content/5"}`}
+                className={`input input-bordered w-full h-[42px] transition-all duration-200 focus:border-[#1D4ED8] bg-base-100/50 sm:pl-20 ${errors[`opt${i}`] ? "border-red-500/50" : "border-base-content/5"}`}
                 placeholder={`Option ${i + 1}`}
                 value={opt}
                 onChange={(e) => updateOption(i, e.target.value)}
@@ -906,27 +910,29 @@ const CreatePost = ({ open, onClose, communityId, communityName, onPostCreated }
   return (
     <AnimatePresence>
       {open && (
-        <>
+        <motion.div
+          className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-12 sm:pt-16 bg-transparent backdrop-blur-xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
           <motion.div
-            className="fixed inset-0 z-40 bg-black/60"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-          <motion.div
-            className="fixed inset-0 z-50 flex sm:items-center items-start justify-center px-4 pt-16 sm:pt-0"
-            initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+            style={{ maxHeight: 'calc(100vh - 120px)' }}
+            className="w-full max-w-lg rounded-3xl bg-base-100 border border-base-300 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
+            initial={{ scale: 0.97, y: 12 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.97, y: 12 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="w-full max-w-lg rounded-2xl bg-base-200 border border-base-300 p-6 max-h-[85dvh] overflow-y-auto shadow-2xl flex flex-col gap-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold">
-                    {communityId ? `Post to ${communityName}` : "Create New Post"}
-                  </h2>
-                </div>
-                <button onClick={onClose} className="btn btn-ghost btn-sm btn-circle"><X size={20} /></button>
+            {/* Header */}
+            <div className="flex-none px-6 py-4 border-b border-base-content/10 bg-base-200/60">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-base-content leading-tight">
+                  {communityId ? `Post to ${communityName}` : "Create New Post"}
+                </h2>
+                <button onClick={onClose} className="btn btn-ghost btn-xs btn-circle bg-base-300"><X size={16} /></button>
               </div>
 
               {!communityId && (
@@ -938,31 +944,32 @@ const CreatePost = ({ open, onClose, communityId, communityName, onPostCreated }
                       className={`btn btn-sm flex-1 ${type === item.key ? "bg-[#1D4ED8] text-white shadow-md" : "btn-ghost text-base-content/60"}`}
                     >
                       {item.icon}
-                      <span className="ml-2 text-xs font-semibold">{item.label}</span>
+                      <span className="ml-1 text-[10px] sm:text-[11px] font-black uppercase tracking-tight whitespace-nowrap">{item.label}</span>
                     </button>
                   ))}
                 </div>
               )}
+            </div>
 
-              <div className="flex-1">
-                {type === "post" && (
-                  <PostForm
-                    onClose={onClose}
-                    communityId={communityId}
-                    onPostCreated={onPostCreated}
-                  />
-                )}
-                {type === "poll" && (
-                  <PollForm
-                    communityId={communityId}
-                    onClose={onClose}
-                    onPostCreated={onPostCreated}
-                  />
-                )}
-              </div>
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 pt-4 bg-base-100">
+              {type === "post" && (
+                <PostForm
+                  onClose={onClose}
+                  communityId={communityId}
+                  onPostCreated={onPostCreated}
+                />
+              )}
+              {type === "poll" && (
+                <PollForm
+                  communityId={communityId}
+                  onClose={onClose}
+                  onPostCreated={onPostCreated}
+                />
+              )}
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { isDepartmentUser } from "../utils/auth";
+import { ModalProvider } from "../context/ModalContext";
 
 import MainLayout from "../components/layout/MainLayout";
 
@@ -100,8 +101,9 @@ const AppRouter = () => {
   useTokenExpiryWatcher(); 
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <ModalProvider>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
 
         {/* ── Public auth routes ── */}
         <Route
@@ -167,6 +169,7 @@ const AppRouter = () => {
 
       </Routes>
     </AnimatePresence>
+    </ModalProvider>
   );
 };
 
