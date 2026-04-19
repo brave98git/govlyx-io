@@ -469,6 +469,7 @@ export default function SearchOverlay({ open, onClose, initialQuery = "" }: Sear
   const [quickLoading, setQuickLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   const debouncedInput = useDebounce(inputValue, 300);
   const { results, loading, initialLoading, hasMore, error, loadMore } = useFullSearch(committedQuery);

@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect, type JSX } from "react";
 
 // ─── API CONFIG ───────────────────────────────────────────────────────────────
+import { apiUrl } from "../../utils/apiUrl";
 
 /**
  * Gets the JWT stored by your auth flow (localStorage key is configurable).
