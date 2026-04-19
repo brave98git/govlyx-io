@@ -89,7 +89,7 @@ async function apiDelete(url: string) {
 export type PostType = "post" | "social-posts";
 
 export type AuthorDto = {
-  username: string;
+  username: string; actualUsername?: string;
   displayName?: string;
   profileImageUrl?: string;
   pincode?: string;
@@ -134,7 +134,7 @@ function timeAgo(raw: string | undefined): string {
 }
 
 function getDisplayName(c: CommentDto): string {
-  return c.author?.displayName ?? c.author?.username ?? "Unknown";
+  return c.author?.displayName ?? c.author?.actualUsername ?? c.author?.username ?? "Unknown";
 }
 
 function getAvatarSrc(username: string | undefined, profileImageUrl?: string): string {

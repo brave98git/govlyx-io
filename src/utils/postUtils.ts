@@ -39,9 +39,19 @@ export function toPostCardPost(dto: any): AnyPost {
   if (!dto) return {} as AnyPost;
 
   // ── Normalize author fields ──────────────────────────────────────────────
-  // AuthorDto fields: { username, profileImage, roleName, isActive }
+  // AuthorDto fields: { username, actualUsername, profileImage, roleName, isActive }
   // PostCard AuthorRow expects top-level: username, userDisplayName, userProfileImage
-  const authorUsername = dto.authorUsername ?? dto.username ?? dto.author?.username ?? dto.user?.username ?? dto.user?.actualUsername ?? "";
+  const authorUsername = 
+    dto.authorActualUsername ?? 
+    dto.author?.actualUsername ?? 
+    dto.user?.actualUsername ?? 
+    dto.actualUsername ?? 
+    dto.authorUsername ?? 
+    dto.author?.username ?? 
+    dto.user?.username ?? 
+    dto.username ?? 
+    "";
+    
   const authorImage = resolveMediaUrl(
     dto.userProfileImage ??
     dto.author?.profileImage ??
