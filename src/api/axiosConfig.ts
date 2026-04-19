@@ -1,7 +1,9 @@
 import axios from "axios";
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "https://jan-sahayak-ai-84vh.onrender.com";
-
+const FALLBACK_URL = import.meta.env.DEV ? "" : "https://jan-sahayak-ai-84vh.onrender.com";
+export const API_BASE_URL = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/$/, "")
+  : FALLBACK_URL;
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 120000,

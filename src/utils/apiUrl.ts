@@ -17,9 +17,10 @@
  *   fetch(apiUrl('/api/search?q=foo'), { headers: ... })
  */
 
+const FALLBACK_URL = import.meta.env.DEV ? "" : "https://jan-sahayak-ai-84vh.onrender.com";
 const BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/$/, "") // strip trailing slash
-  : "";                                               // dev: use Vite proxy
+  : FALLBACK_URL;
 
 /**
  * Prepend the backend base URL to `path`.
