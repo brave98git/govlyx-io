@@ -1238,6 +1238,7 @@ export default function PostCard({
 
       // 3. Update the post data locally if we're in a poll variant
       if (post.variant === "poll" && res) {
+        res.isPoll = true;
         const updatedPoll = toPostCardPost(res) as PollPost;
         // Merge the updated poll data into the current post object
         Object.assign(post, updatedPoll);
